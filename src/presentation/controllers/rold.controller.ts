@@ -4,13 +4,14 @@ import { RoleEntity } from '../../infrastructure/persistence/entities/role.entit
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roldGuard';
 import { Roles } from '../../core/decorators/roles.decorator';
+import { QueryDto } from '@application/common/query.dto';
 
 @Controller('roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  //@UseGuards(JwtAuthGuard)
   async findAll(): Promise<RoleEntity[]> {
     return this.roleService.findAll();
   }
@@ -26,6 +27,12 @@ export class RoleController {
   @Roles('admin')
   async create(@Body() roleData: Partial<RoleEntity>): Promise<RoleEntity> {
     return this.roleService.create(roleData);
+  }
+  
+  @Post('query')
+  async query(@Body() queryDto: QueryDto): Promise<RoleEntity | RoleEntity[]> {
+   
+    return this.roleService.query(queryDto);
   }
 
   @Put(':id')

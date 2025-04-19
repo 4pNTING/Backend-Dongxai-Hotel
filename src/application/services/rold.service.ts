@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RoleRepository } from '../../infrastructure/persistence/repositories/role.repository';
 import { RoleEntity } from '../../infrastructure/persistence/entities/role.entity';
+import { QueryDto } from '../../application/common/query.dto'; // เพิ่มการอิมพอร์ต
 
 @Injectable()
 export class RoleService {
@@ -38,5 +39,9 @@ export class RoleService {
   async delete(id: number): Promise<boolean> {
     await this.findById(id); // Verify role exists
     return this.roleRepository.delete(id);
+  }
+
+  async query(queryDto: QueryDto): Promise<RoleEntity | RoleEntity[]> {
+    return this.roleRepository.query(queryDto);
   }
 }

@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoleEntity } from '../entities/role.entity';
+import { QueryDto } from '@application/common/query.dto';
 
 @Injectable()
 export class RoleRepository {
@@ -13,6 +14,16 @@ export class RoleRepository {
 
   async findAll(): Promise<RoleEntity[]> {
     return this.roleRepository.find();
+  }
+  async query(queryDto: QueryDto): Promise<RoleEntity | RoleEntity[]> {
+    
+    const queryBuilder = this.roleRepository.createQueryBuilder('role');
+    
+    if (queryDto.getType === 'one') {
+      return queryBuilder.getOne();
+    }
+    
+    return queryBuilder.getMany();
   }
 
   async findById(id: number): Promise<RoleEntity | null> {
