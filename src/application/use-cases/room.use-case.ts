@@ -1,3 +1,4 @@
+// src/application/use-cases/room.use-case.ts
 import { Inject, Injectable } from '@nestjs/common';
 import { QueryDto } from '../common/query.dto';
 import { RoomServicePort } from '../ports/room.port';
@@ -25,5 +26,9 @@ export class RoomUseCase {
 
   async delete(id: number): Promise<boolean> {
     return this.service.delete(id);
+  }
+
+  async findAvailableRooms(checkInDate: Date, checkOutDate: Date): Promise<RoomModel[]> {
+    return this.service.findAvailableRooms(checkInDate, checkOutDate);
   }
 }

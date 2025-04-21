@@ -1,7 +1,7 @@
 // src/infrastructure/persistence/entities/room-status.entity.ts
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('roomstatuses')
+@Entity('RoomStatus')
 export class RoomStatusEntity {
   @PrimaryGeneratedColumn({ type: 'integer' })
   StatusId: number;

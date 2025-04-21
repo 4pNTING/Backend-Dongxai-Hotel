@@ -8,4 +8,5 @@ export interface RoomServicePort {
   create(dto: CreateRoomDto): Promise<RoomModel>;
   update(id: number, dto: UpdateRoomDto): Promise<boolean>;
   delete(id: number): Promise<boolean>;
+  findAvailableRooms(checkInDate: Date, checkOutDate: Date): Promise<RoomModel[]>;
 }

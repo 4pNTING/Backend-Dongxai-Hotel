@@ -41,4 +41,8 @@ export class RoomService implements RoomServicePort {
     }
     return this.roomRepository.delete(id);
   }
+
+  async findAvailableRooms(checkInDate: Date, checkOutDate: Date): Promise<RoomModel[]> {
+    return this.roomRepository.findAvailableRooms(checkInDate, checkOutDate);
+  }
 }

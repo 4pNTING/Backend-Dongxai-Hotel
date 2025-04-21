@@ -1,20 +1,20 @@
 // src/application/dtos/room.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, Min } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 
 export class CreateRoomDto {
-  @ApiProperty({ example: 'STD' })
+  @ApiProperty({ example: 1, description: 'Room type ID' })
   @IsNotEmpty()
-  @IsString()
-  RoomType: string;
+  @IsNumber()
+  TypeId: number;
 
-  @ApiProperty({ example: 'Available' })
+  @ApiProperty({ example: 1, description: 'Room status ID' })
   @IsNotEmpty()
-  @IsString()
-  RoomStatus: string;
+  @IsNumber()
+  StatusId: number;
 
-  @ApiProperty({ example: 1500.50 })
+  @ApiProperty({ example: 1500.50, description: 'Room price' })
   @IsNotEmpty()
   @IsNumber()
   @Min(0)

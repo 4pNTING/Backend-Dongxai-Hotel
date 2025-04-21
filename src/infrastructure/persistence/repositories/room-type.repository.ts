@@ -107,9 +107,9 @@ export class RoomTypeRepository {
   }
 
   private mapToModel(entity: RoomTypeEntity): RoomTypeModel {
-    return new RoomTypeModel({
-      TypeId: entity.TypeId,
-      TypeName: entity.TypeName
-    });
+    const model = new RoomTypeModel();
+    model.TypeId = entity.TypeId;
+    model.TypeName = entity.TypeName;
+    return model;
   }
 }

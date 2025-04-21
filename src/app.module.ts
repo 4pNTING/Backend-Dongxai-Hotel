@@ -1,3 +1,4 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
@@ -6,6 +7,8 @@ import databaseConfig from './infrastructure/config/typeorm.config';
 import { CustomersModule } from './modules/customers.module';
 import { StaffModule } from './modules/staff.module';
 import { RoomsModule } from './modules/rooms.module';
+import { RoomTypeModule } from './modules/room-type.module';
+import { RoomStatusModule } from './modules/room-status.module';
 import { BookingsModule } from './modules/bookings.module';
 import { CheckInModule } from './modules/check-in.module';
 import { CheckOutModule } from './modules/check-out.module';
@@ -21,6 +24,8 @@ import { RolesModule } from './modules/rold.module';
       load: [databaseConfig],
     }),
     DatabaseModule, 
+    RoomTypeModule,    // Import before RoomsModule
+    RoomStatusModule,  // Import before RoomsModule
     CustomersModule,
     StaffModule,
     RoomsModule,

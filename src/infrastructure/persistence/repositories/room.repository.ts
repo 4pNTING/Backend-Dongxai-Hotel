@@ -15,7 +15,9 @@ export class RoomRepository {
   ) {}
 
   async findAll(query: QueryDto): Promise<RoomModel[]> {
-    const queryBuilder = this.roomRepository.createQueryBuilder('room');
+    const queryBuilder = this.roomRepository.createQueryBuilder('room')
+      .leftJoinAndSelect('room.roomType', 'roomType')
+      .leftJoinAndSelect('room.roomStatus', 'roomStatus');
     
     // Apply select
     if (query.select && query.select.length > 0) {
@@ -25,14 +27,22 @@ export class RoomRepository {
     // Apply relations
     if (query.relations && query.relations.length > 0) {
       query.relations.forEach(relation => {
-        queryBuilder.leftJoinAndSelect(`room.${relation}`, relation);
+        if (relation !== 'roomType' && relation !== 'roomStatus') { // These are already joined
+          queryBuilder.leftJoinAndSelect(`room.${relation}`, relation);
+        }
       });
     }
     
     // Apply filters
     if (query.filter) {
       Object.keys(query.filter).forEach(key => {
-        queryBuilder.andWhere(`room.${key} = :${key}`, { [key]: query.filter[key] });
+        if (key === 'RoomType') {
+          queryBuilder.andWhere('roomType.TypeName = :typeName', { typeName: query.filter[key] });
+        } else if (key === 'RoomStatus') {
+          queryBuilder.andWhere('roomStatus.StatusName = :statusName', { statusName: query.filter[key] });
+        } else {
+          queryBuilder.andWhere(`room.${key} = :${key}`, { [key]: query.filter[key] });
+        }
       });
     }
     
@@ -61,9 +71,12 @@ export class RoomRepository {
   }
 
   async findById(id: number, relations: string[] = []): Promise<RoomModel | null> {
+    // Always include roomType and roomStatus
+    const allRelations = [...new Set(['roomType', 'roomStatus', ...relations])];
+    
     const entity = await this.roomRepository.findOne({
       where: { RoomId: id },
-      relations: relations
+      relations: allRelations
     });
     
     if (!entity) {
@@ -74,9 +87,13 @@ export class RoomRepository {
   }
 
   async findAvailableRooms(checkInDate: Date, checkOutDate: Date): Promise<RoomModel[]> {
+    const availableStatusId = 1; // Assuming 1 is the ID for 'Available' status
+    
     const entities = await this.roomRepository
       .createQueryBuilder('room')
-      .where('room.RoomStatus = :status', { status: 'Available' })
+      .leftJoinAndSelect('room.roomType', 'roomType')
+      .leftJoinAndSelect('room.roomStatus', 'roomStatus')
+      .where('room.StatusId = :statusId', { statusId: availableStatusId })
       .andWhere('room.RoomId NOT IN ' +
         '(SELECT DISTINCT "RoomId" FROM bookings ' +
         'WHERE ("CheckinDate" <= :checkOutDate AND "CheckoutDate" >= :checkInDate))',
@@ -87,10 +104,14 @@ export class RoomRepository {
   }
 
   async create(data: CreateRoomDto): Promise<RoomModel> {
-    const entity = this.roomRepository.create(data);
+    const entity = this.roomRepository.create({
+      TypeId: data.TypeId,
+      StatusId: data.StatusId,
+      RoomPrice: data.RoomPrice
+    });
     
     const savedEntity = await this.roomRepository.save(entity);
-    return this.mapToModel(savedEntity);
+    return this.findById(savedEntity.RoomId); // Fetch with relations
   }
 
   async update(id: number, data: UpdateRoomDto): Promise<RoomModel> {
@@ -102,10 +123,13 @@ export class RoomRepository {
       throw new NotFoundException(`Room with id ${id} not found`);
     }
     
-    Object.assign(entity, data);
+    // Update only the fields that are provided
+    if (data.TypeId !== undefined) entity.TypeId = data.TypeId;
+    if (data.StatusId !== undefined) entity.StatusId = data.StatusId;
+    if (data.RoomPrice !== undefined) entity.RoomPrice = data.RoomPrice;
     
-    const updatedEntity = await this.roomRepository.save(entity);
-    return this.mapToModel(updatedEntity);
+    await this.roomRepository.save(entity);
+    return this.findById(id); // Fetch with relations
   }
 
   async delete(id: number): Promise<boolean> {
@@ -114,14 +138,31 @@ export class RoomRepository {
   }
 
   private mapToModel(entity: RoomEntity): RoomModel {
-    return new RoomModel({
-      RoomId: entity.RoomId,
-      RoomType: entity.RoomType,
-      RoomStatus: entity.RoomStatus,
-      RoomPrice: entity.RoomPrice,
-      bookings: entity.bookings,
-      checkIns: entity.checkIns,
-      checkOuts: entity.checkOuts
-    });
+    const model = new RoomModel();
+    model.RoomId = entity.RoomId;
+    model.TypeId = entity.TypeId;
+    model.StatusId = entity.StatusId;
+    model.RoomPrice = entity.RoomPrice;
+    
+    // Map related entities if available
+    if (entity.roomType) {
+      model.roomType = {
+        TypeId: entity.roomType.TypeId,
+        TypeName: entity.roomType.TypeName
+      };
+    }
+    
+    if (entity.roomStatus) {
+      model.roomStatus = {
+        StatusId: entity.roomStatus.StatusId,
+        StatusName: entity.roomStatus.StatusName
+      };
+    }
+    
+    model.bookings = entity.bookings;
+    model.checkIns = entity.checkIns;
+    model.checkOuts = entity.checkOuts;
+    
+    return model;
   }
 }

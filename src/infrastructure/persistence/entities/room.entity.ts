@@ -11,11 +11,19 @@ export class RoomEntity {
   @PrimaryGeneratedColumn({ type: 'integer' })
   RoomId: number;
 
-  @Column({ length: 3 })
-  RoomType: string;
+  @Column({ type: 'integer' })
+  TypeId: number;
 
-  @Column({ length: 10 })
-  RoomStatus: string;
+  @ManyToOne(() => RoomTypeEntity, { eager: true })
+  @JoinColumn({ name: 'TypeId' })
+  roomType: RoomTypeEntity;
+
+  @Column({ type: 'integer' })
+  StatusId: number;
+
+  @ManyToOne(() => RoomStatusEntity, { eager: true })
+  @JoinColumn({ name: 'StatusId' })
+  roomStatus: RoomStatusEntity;
 
   @Column({ type: 'float' })
   RoomPrice: number;
