@@ -44,7 +44,7 @@ export class StaffEntity {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @OneToMany(() => BookingEntity, booking => booking.staff)
+  @OneToMany(() => BookingEntity, booking => booking.StaffId)
   bookings: BookingEntity[];
 
   @OneToMany(() => CheckInEntity, checkIn => checkIn.staff)

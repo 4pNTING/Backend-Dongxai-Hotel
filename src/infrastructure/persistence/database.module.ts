@@ -23,7 +23,7 @@ import { BookingEntity } from '../persistence/entities/booking.entity';
           BookingEntity,
        
         ],
-        synchronize: configService.get<boolean>('DB_SYNC', false),
+        synchronize: configService.get<boolean>('DB_SYNC', true ),
         logging: configService.get<boolean>('DB_LOGGING', false),
         autoLoadEntities: true,
         migrations: [__dirname + '/../migrations/**/*{.ts,.js}'],

@@ -11,9 +11,5 @@ export class CancellationModel {
   booking?: BookingEntity;
   staff?: StaffEntity;
 
-  constructor(params?: Partial<CancellationModel>) {
-    if (params) {
-      Object.assign(this, params);
-    }
-  }
+ 
 }

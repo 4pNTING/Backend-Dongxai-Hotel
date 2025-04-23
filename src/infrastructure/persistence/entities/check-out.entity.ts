@@ -5,7 +5,7 @@ import { RoomEntity } from './room.entity';
 import { StaffEntity } from './staff.entity';
 import { PaymentEntity } from './payment.entity';
 
-@Entity('checkouts')
+@Entity('check_outs')
 export class CheckOutEntity {
   @PrimaryGeneratedColumn({ type: 'integer' })
   CheckoutId: number;
@@ -16,19 +16,19 @@ export class CheckOutEntity {
   @Column({ type: 'integer' })
   CheckinId: number;
 
-  @Column({ type: 'integer' })
-  RoomId: number;
-
-  @Column({ type: 'integer' })
-  StaffId: number;
-
   @ManyToOne(() => CheckInEntity, checkIn => checkIn.checkOuts)
   @JoinColumn({ name: 'CheckinId' })
   checkIn: CheckInEntity;
 
+  @Column({ type: 'integer' })
+  RoomId: number;
+
   @ManyToOne(() => RoomEntity, room => room.checkOuts)
   @JoinColumn({ name: 'RoomId' })
   room: RoomEntity;
+
+  @Column({ type: 'integer' })
+  StaffId: number;
 
   @ManyToOne(() => StaffEntity, staff => staff.checkOuts)
   @JoinColumn({ name: 'StaffId' })

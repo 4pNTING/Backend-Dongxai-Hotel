@@ -1,51 +1,50 @@
 // src/infrastructure/persistence/entities/check-in.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { BookingEntity } from './booking.entity';
-import { RoomEntity } from './room.entity';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { CustomerEntity } from './customer.entity';
+import { RoomEntity } from './room.entity';
+import { BookingEntity } from './booking.entity';
 import { StaffEntity } from './staff.entity';
 import { CheckOutEntity } from './check-out.entity';
 
-@Entity('checkins')
+@Entity('check_ins')
 export class CheckInEntity {
-  @PrimaryGeneratedColumn({ type: 'integer' })
-  CheckinId: number;
+  @PrimaryGeneratedColumn({ name: 'CheckinId' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
+  CheckInId: number;
 
-  @Column({ type: 'date' })
-  CheckinDate: Date;
+  @Column({ name: 'CheckinDate', type: 'date' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
+  CheckInDate: Date;
 
   @Column({ type: 'date' })
   CheckoutDate: Date;
 
-  @Column({ type: 'integer' })
+  @Column()
   RoomId: number;
 
-  @Column({ type: 'integer', nullable: true })
+  @Column()
   BookingId: number;
 
-  @Column({ type: 'integer' })
-  GuestId: number;
+  @Column({ name: 'GuestId' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
+  CustomerId: number;
 
-  @Column({ type: 'integer' })
+  @Column()
   StaffId: number;
 
-  @ManyToOne(() => BookingEntity, booking => booking.checkIns)
-  @JoinColumn({ name: 'BookingId' })
-  booking: BookingEntity;
+  @ManyToOne(() => CustomerEntity)
+  @JoinColumn({ name: 'GuestId' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
+  customer: CustomerEntity;
 
-  @ManyToOne(() => RoomEntity, room => room.checkIns)
+  @ManyToOne(() => RoomEntity)
   @JoinColumn({ name: 'RoomId' })
   room: RoomEntity;
 
-  @ManyToOne(() => CustomerEntity, customer => customer.checkIns)
-  @JoinColumn({ name: 'GuestId' })
-  customer: CustomerEntity;
+  @ManyToOne(() => BookingEntity)
+  @JoinColumn({ name: 'BookingId' })
+  booking: BookingEntity;
 
-  @ManyToOne(() => StaffEntity, staff => staff.checkIns)
+  @ManyToOne(() => StaffEntity)
   @JoinColumn({ name: 'StaffId' })
   staff: StaffEntity;
 
   @OneToMany(() => CheckOutEntity, checkOut => checkOut.checkIn)
   checkOuts: CheckOutEntity[];
 }
-

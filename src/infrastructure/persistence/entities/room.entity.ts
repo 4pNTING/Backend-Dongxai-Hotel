@@ -25,7 +25,7 @@ export class RoomEntity {
   @JoinColumn({ name: 'StatusId' })
   roomStatus: RoomStatusEntity;
 
-  @Column({ type: 'float' })
+  @Column({  type:'integer',  nullable: true })
   RoomPrice: number;
 
   @OneToMany(() => BookingEntity, booking => booking.room)

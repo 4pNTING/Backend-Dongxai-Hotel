@@ -121,6 +121,8 @@ export class BookingRepository {
     model.CheckoutDate = entity.CheckoutDate;
     model.GuestId = entity.GuestId;
     model.StaffId = entity.StaffId;
+    model.BookingStatus = entity.BookingStatus; // เพิ่มบรรทัดนี้
+    model.CreatedAt = entity.CreatedAt; // เพิ่มฟิลด์นี้ด้วยถ้าต้องการ
     
     // Add related entities if they exist
     if (entity.room) model.room = entity.room;

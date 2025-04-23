@@ -19,6 +19,11 @@ export class BookingController {
     return this.bookingUseCase.query({ ...query, getType: 'many' });
   }
 
+  @Post('query')  // เพิ่ม endpoint นี้
+async queryBookings(@Body() query: QueryDto) {
+  return this.bookingUseCase.query({ ...query, getType: 'many' });
+}
+
   @Get(':id')
   async findOne(@Param('id') id: number) {
     return this.bookingUseCase.query({ 

@@ -20,6 +20,10 @@ export class CheckInService {
     return this.checkInRepository.findAll(dto);
   }
 
+  async findByCustomerId(customerId: number): Promise<CheckInModel[]> {
+    return this.checkInRepository.findByCustomerId(customerId);
+  }
+
   async create(dto: CreateCheckInDto): Promise<CheckInModel> {
     return this.checkInRepository.create(dto);
   }

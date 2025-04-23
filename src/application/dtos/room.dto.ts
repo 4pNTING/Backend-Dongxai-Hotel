@@ -22,3 +22,40 @@ export class CreateRoomDto {
 }
 
 export class UpdateRoomDto extends PartialType(CreateRoomDto) {}
+
+// DTO สำหรับการตอบกลับ
+export class RoomResponseDto {
+  @ApiProperty({ example: 1 })
+  RoomId: number;
+
+  @ApiProperty({ example: 1 })
+  TypeId: number;
+
+  @ApiProperty({ example: 1 })
+  StatusId: number;
+
+  @ApiProperty({ example: 1500.50 })
+  RoomPrice: number;
+
+  @ApiProperty({ 
+    example: { 
+      TypeId: 1, 
+      TypeName: 'Standard' 
+    } 
+  })
+  roomType?: {
+    TypeId: number;
+    TypeName: string;
+  };
+
+  @ApiProperty({ 
+    example: { 
+      StatusId: 1, 
+      StatusName: 'Available' 
+    } 
+  })
+  roomStatus?: {
+    StatusId: number;
+    StatusName: string;
+  };
+}

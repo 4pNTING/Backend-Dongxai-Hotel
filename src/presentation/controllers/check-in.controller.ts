@@ -29,6 +29,11 @@ import {Controller,Get, Post,Put,Delete,Body,Param,Query, HttpCode,HttpStatus} f
       };
       return this.checkInService.query(queryDto) as Promise<CheckInModel>;
     }
+
+    @Post('customer/:customerId')  
+    async findByCustomerId(@Param('customerId') customerId: number): Promise<CheckInModel[]> {
+      return this.checkInService.findByCustomerId(customerId);
+    }
   
     @Post()
     @ApiOperation({ summary: 'Create a new check-in' })

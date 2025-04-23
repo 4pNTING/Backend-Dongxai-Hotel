@@ -1,11 +1,12 @@
 // src/application/dtos/booking.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsDate } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsDate, IsString, IsEnum } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { BookingStatusEnum  } from '@core/enum/BookingStatus';
 
 export class CreateBookingDto {
-  @ApiProperty({ example: '2023-09-15' })
+  @ApiProperty({ example: '2023-09-01' })
   @IsNotEmpty()
   @IsDate()
   @Type(() => Date)
@@ -37,6 +38,15 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @IsNumber()
   StaffId: number;
+
+  @ApiProperty({ 
+    example: 'Confirmed',
+    enum: BookingStatusEnum ,
+    description: 'Booking status (Confirmed, Pending, Cancelled, etc.)' 
+  })
+  @IsNotEmpty()
+  @IsEnum(BookingStatusEnum)
+  BookingStatus: BookingStatusEnum ;
 }
 
 export class UpdateBookingDto extends PartialType(CreateBookingDto) {}

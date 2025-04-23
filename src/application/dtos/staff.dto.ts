@@ -47,6 +47,7 @@ export class CreateStaffDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(6)
+  
   password: string;
   
   @ApiProperty({ default: true })

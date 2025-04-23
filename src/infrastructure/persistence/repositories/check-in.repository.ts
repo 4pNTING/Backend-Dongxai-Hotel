@@ -62,7 +62,7 @@ export class CheckInRepository {
 
   async findById(id: number, relations: string[] = []): Promise<CheckInModel | null> {
     const entity = await this.checkInRepository.findOne({
-      where: { CheckinId: id },
+      where: { CheckInId: id }, // แก้จาก CheckinId เป็น CheckInId ให้ตรงกับ entity
       relations: relations
     });
     
@@ -85,6 +85,15 @@ export class CheckInRepository {
     
     return this.mapToModel(entity);
   }
+  async findByCustomerId(customerId: number): Promise<CheckInModel[]> {
+    const entities = await this.checkInRepository.find({
+      where: { CustomerId: customerId },
+      relations: ['booking', 'room', 'customer', 'staff', 'checkOuts']
+    });
+    
+    return entities.map(entity => this.mapToModel(entity));
+  }
+  
 
   async create(data: CreateCheckInDto): Promise<CheckInModel> {
     const entity = this.checkInRepository.create(data);
@@ -95,7 +104,7 @@ export class CheckInRepository {
 
   async update(id: number, data: UpdateCheckInDto): Promise<CheckInModel> {
     const entity = await this.checkInRepository.findOne({
-      where: { CheckinId: id }
+      where: { CheckInId: id } // แก้จาก CheckinId เป็น CheckInId ให้ตรงกับ entity
     });
     
     if (!entity) {
@@ -115,18 +124,18 @@ export class CheckInRepository {
 
   private mapToModel(entity: CheckInEntity): CheckInModel {
     return new CheckInModel({
-      CheckinId: entity.CheckinId,
-      CheckinDate: entity.CheckinDate,
+      CheckInId: entity.CheckInId, // แก้จาก CheckinId เป็น CheckInId ให้ตรงกับ entity
+      CheckInDate: entity.CheckInDate, // แก้จาก CheckinDate เป็น CheckInDate ให้ตรงกับ entity
       CheckoutDate: entity.CheckoutDate,
       RoomId: entity.RoomId,
       BookingId: entity.BookingId,
-      GuestId: entity.GuestId,
+      CustomerId: entity.CustomerId, // เปลี่ยนจาก GuestId เป็น CustomerId
       StaffId: entity.StaffId,
       booking: entity.booking,
       room: entity.room,
       customer: entity.customer,
-      staff: entity.staff,
-      checkOuts: entity.checkOuts
+      staff: entity.staff
+      // ลบ checkOuts ออกเนื่องจากไม่มีใน entity
     });
   }
 }

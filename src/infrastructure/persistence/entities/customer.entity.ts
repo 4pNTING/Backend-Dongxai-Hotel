@@ -34,5 +34,7 @@ export class CustomerEntity {
 
   @OneToMany(() => CheckInEntity, checkIn => checkIn.customer)
   checkIns: CheckInEntity[];
+
+  // Removed duplicate declaration of checkIns
 }
 

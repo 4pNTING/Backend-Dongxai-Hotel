@@ -9,7 +9,7 @@ export class CreateCheckInDto {
   @IsNotEmpty()
   @IsDate()
   @Type(() => Date)
-  CheckinDate: Date;
+  CheckInDate: Date; // แก้จาก CheckinDate เป็น CheckInDate
 
   @ApiProperty({ example: '2023-09-20' })
   @IsNotEmpty()
@@ -30,7 +30,7 @@ export class CreateCheckInDto {
   @ApiProperty({ example: 1 })
   @IsNotEmpty()
   @IsNumber()
-  GuestId: number;
+  CustomerId: number; // เปลี่ยนจาก GuestId เป็น CustomerId
 
   @ApiProperty({ example: 1 })
   @IsNotEmpty()

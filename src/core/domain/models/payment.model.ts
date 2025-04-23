@@ -15,9 +15,5 @@ export class PaymentModel {
   checkOut?: CheckOutEntity;
   staff?: StaffEntity;
 
-  constructor(params?: Partial<PaymentModel>) {
-    if (params) {
-      Object.assign(this, params);
-    }
-  }
+
 }

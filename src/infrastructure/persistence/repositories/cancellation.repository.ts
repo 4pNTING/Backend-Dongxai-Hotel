@@ -114,13 +114,15 @@ export class CancellationRepository {
   }
 
   private mapToModel(entity: CancellationEntity): CancellationModel {
-    return new CancellationModel({
-      CancelId: entity.CancelId,
-      CancelDate: entity.CancelDate,
-      StaffId: entity.StaffId,
-      BookingId: entity.BookingId,
-      booking: entity.booking,
-      staff: entity.staff
-    });
+    const model = new CancellationModel();
+    
+    model.CancelId = entity.CancelId;
+    model.CancelDate = entity.CancelDate;
+    model.StaffId = entity.StaffId;
+    model.BookingId = entity.BookingId;
+    model.booking = entity.booking;
+    model.staff = entity.staff;
+    
+    return model;
   }
 }

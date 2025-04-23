@@ -114,16 +114,18 @@ export class CheckOutRepository {
   }
 
   private mapToModel(entity: CheckOutEntity): CheckOutModel {
-    return new CheckOutModel({
-      CheckoutId: entity.CheckoutId,
-      CheckoutDate: entity.CheckoutDate,
-      CheckinId: entity.CheckinId,
-      RoomId: entity.RoomId,
-      StaffId: entity.StaffId,
-      checkIn: entity.checkIn,
-      room: entity.room,
-      staff: entity.staff,
-      payments: entity.payments
-    });
+    const model = new CheckOutModel();
+    
+    model.CheckoutId = entity.CheckoutId;
+    model.CheckoutDate = entity.CheckoutDate;
+    model.CheckinId = entity.CheckinId;
+    model.RoomId = entity.RoomId;
+    model.StaffId = entity.StaffId;
+    model.checkIn = entity.checkIn;
+    model.room = entity.room;
+    model.staff = entity.staff;
+    model.payments = entity.payments;
+    
+    return model;
   }
 }
