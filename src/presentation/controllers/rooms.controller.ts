@@ -9,8 +9,8 @@ import { Public } from '../../core/decorators/public.decorator';
 
 @ApiTags(METADATA_KEY.API_TAG.ROOM)
 @Controller('rooms')
-// @UseGuards(JwtAuthGuard)
-// @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class RoomController {
   constructor(
     private readonly roomUseCase: RoomUseCase

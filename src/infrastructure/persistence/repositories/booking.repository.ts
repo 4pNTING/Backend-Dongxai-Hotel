@@ -73,9 +73,9 @@ export class BookingRepository {
     return this.mapToModel(entity);
   }
 
-  async findByCustomerId(guestId: number): Promise<BookingModel[]> {
+  async findByCustomerId(CustomerId: number): Promise<BookingModel[]> {
     const entities = await this.bookingRepository.find({
-      where: { GuestId: guestId },
+      where: { CustomerId: CustomerId },
       relations: ['room', 'customer', 'staff'],
       order: { BookingDate: 'DESC' }
     });
@@ -119,7 +119,7 @@ export class BookingRepository {
     model.RoomId = entity.RoomId;
     model.CheckinDate = entity.CheckinDate;
     model.CheckoutDate = entity.CheckoutDate;
-    model.GuestId = entity.GuestId;
+    model.CustomerId = entity.CustomerId;
     model.StaffId = entity.StaffId;
     model.BookingStatus = entity.BookingStatus; // เพิ่มบรรทัดนี้
     model.CreatedAt = entity.CreatedAt; // เพิ่มฟิลด์นี้ด้วยถ้าต้องการ

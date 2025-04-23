@@ -12,7 +12,7 @@ export class BookingModel {
   RoomId: number;
   CheckinDate: Date;
   CheckoutDate: Date;
-  GuestId: number;
+  CustomerId: number;
   StaffId: number;
   BookingStatus: string;
   CreatedAt: Date;

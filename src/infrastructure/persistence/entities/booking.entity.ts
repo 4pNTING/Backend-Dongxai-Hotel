@@ -29,7 +29,7 @@ export class BookingEntity {
   CheckoutDate: Date;
 
   @Column({ type: 'integer' })
-  GuestId: number;
+  CustomerId: number;
 
   @ManyToOne(() => CustomerEntity, customer => customer.bookings)
   @JoinColumn({ name: 'GuestId' })
@@ -53,4 +53,5 @@ export class BookingEntity {
 
   @OneToMany(() => CancellationEntity, cancellation => cancellation.booking)
   cancellations: CancellationEntity[];
+  
 }
