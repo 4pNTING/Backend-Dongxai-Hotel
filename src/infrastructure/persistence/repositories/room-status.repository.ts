@@ -21,32 +21,8 @@ export class RoomStatusRepository {
       queryBuilder.select(query.select.map(field => `roomStatus.${field}`));
     }
     
-    // Apply filters
-    if (query.filter) {
-      Object.keys(query.filter).forEach(key => {
-        queryBuilder.andWhere(`roomStatus.${key} = :${key}`, { [key]: query.filter[key] });
-      });
-    }
-    
-    // Apply sorting
-    if (query.orderBy) {
-      Object.keys(query.orderBy).forEach(key => {
-        queryBuilder.addOrderBy(`roomStatus.${key}`, query.orderBy[key]);
-      });
-    } else if (query.orderByField) {
-      queryBuilder.orderBy(`roomStatus.${query.orderByField}`, query.order);
-    } else {
-      queryBuilder.orderBy('roomStatus.StatusId', 'ASC');
-    }
-    
-    // Apply pagination
-    if (query.skip !== undefined) {
-      queryBuilder.skip(query.skip);
-    }
-    
-    if (query.take !== undefined) {
-      queryBuilder.take(query.take);
-    }
+ 
+
     
     const entities = await queryBuilder.getMany();
     return entities.map(entity => this.mapToModel(entity));
@@ -62,6 +38,22 @@ export class RoomStatusRepository {
     }
     
     return this.mapToModel(entity);
+  }
+
+  async create(data: { StatusName: string }): Promise<RoomStatusModel> {
+    const entity = this.roomStatusRepository.create(data);
+    const saved = await this.roomStatusRepository.save(entity);
+    return this.mapToModel(saved);
+  }
+  
+  async update(id: number, data: Partial<{ StatusName: string }>): Promise<boolean> {
+    const result = await this.roomStatusRepository.update({ StatusId: id }, data);
+    return result.affected > 0;
+  }
+  
+  async delete(id: number): Promise<boolean> {
+    const result = await this.roomStatusRepository.delete({ StatusId: id });
+    return result.affected > 0;
   }
 
   async findByName(statusName: string): Promise<RoomStatusModel | null> {

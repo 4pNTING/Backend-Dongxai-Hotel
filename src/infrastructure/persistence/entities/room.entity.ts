@@ -1,5 +1,5 @@
 // src/infrastructure/persistence/entities/room.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { BookingEntity } from './booking.entity';
 import { CheckInEntity } from './check-in.entity';
 import { CheckOutEntity } from './check-out.entity';
@@ -25,7 +25,7 @@ export class RoomEntity {
   @JoinColumn({ name: 'StatusId' })
   roomStatus: RoomStatusEntity;
 
-  @Column({  type:'integer',  nullable: true })
+  @Column({ type: 'integer', nullable: true })
   RoomPrice: number;
 
   @OneToMany(() => BookingEntity, booking => booking.room)
@@ -36,4 +36,12 @@ export class RoomEntity {
 
   @OneToMany(() => CheckOutEntity, checkOut => checkOut.room)
   checkOuts: CheckOutEntity[];
+
+  
+
+  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
 }

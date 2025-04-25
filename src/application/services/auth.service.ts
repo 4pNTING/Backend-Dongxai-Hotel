@@ -151,7 +151,9 @@ export class AuthService implements AuthServicePort {
     try {
       const tokenEntity = await this.refreshTokenRepository.findByToken(token);
       if (!tokenEntity) {
-        throw new NotFoundException('Token not found');
+        // แทนที่จะโยน exception ให้แค่บันทึกข้อความเตือนและส่งค่า false กลับ
+        this.logger.warn(`Refresh token not found during logout attempt`);
+        return false;
       }
       
       await this.refreshTokenRepository.revokeToken(tokenEntity.id);

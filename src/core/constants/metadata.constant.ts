@@ -17,6 +17,8 @@ export const METADATA_KEY = {
     CHECK_OUT: 'CHECK_OUT',
     PAYMENT: 'PAYMENT',
     CANCELLATION: 'CANCELLATION',
+    ROOM_STATUS: 'ROOM_STATUS',
+    ROOM_TYPE: 'ROOM_TYPE',
   },
   CONTEXT: {
     REQUEST_ID: 'requestId',

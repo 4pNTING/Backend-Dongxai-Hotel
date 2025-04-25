@@ -1,12 +1,5 @@
 // src/infrastructure/filters/http-exception.filter.ts
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import {  ExceptionFilter,  Catch,  ArgumentsHost, HttpException,  HttpStatus, Logger,} from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
@@ -47,3 +40,4 @@ export class HttpExceptionFilter implements ExceptionFilter {
     });
   }
 }
+

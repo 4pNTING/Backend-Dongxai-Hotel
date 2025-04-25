@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RoomTypeEntity } from '../infrastructure/persistence/entities/room-type.entity';
 import { RoomTypeRepository } from '../infrastructure/persistence/repositories/room-type.repository';
 import { RoomTypeService } from '../application/services/room-type.service';
+import { RoomTypeUseCase } from '../application/use-cases/room-type.use-case';
+import { RoomTypeController } from '../presentation/controllers/room-type.controller';
 
 @Module({
   imports: [
@@ -11,10 +13,17 @@ import { RoomTypeService } from '../application/services/room-type.service';
       RoomTypeEntity
     ])
   ],
+  controllers: [
+    RoomTypeController
+  ],
   providers: [
     RoomTypeRepository,
-    RoomTypeService
+    {
+      provide: 'RoomTypeServicePort',
+      useClass: RoomTypeService
+    },
+    RoomTypeUseCase
   ],
-  exports: [RoomTypeService, RoomTypeRepository],
+  exports: [RoomTypeRepository, 'RoomTypeServicePort', RoomTypeUseCase],
 })
 export class RoomTypeModule {}

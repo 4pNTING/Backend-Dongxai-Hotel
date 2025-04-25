@@ -17,37 +17,7 @@ export class RoomTypeRepository {
   async findAll(query: QueryDto): Promise<RoomTypeModel[]> {
     const queryBuilder = this.roomTypeRepository.createQueryBuilder('roomType');
     
-    // Apply select
-    if (query.select && query.select.length > 0) {
-      queryBuilder.select(query.select.map(field => `roomType.${field}`));
-    }
-    
-    // Apply filters
-    if (query.filter) {
-      Object.keys(query.filter).forEach(key => {
-        queryBuilder.andWhere(`roomType.${key} = :${key}`, { [key]: query.filter[key] });
-      });
-    }
-    
-    // Apply sorting
-    if (query.orderBy) {
-      Object.keys(query.orderBy).forEach(key => {
-        queryBuilder.addOrderBy(`roomType.${key}`, query.orderBy[key]);
-      });
-    } else if (query.orderByField) {
-      queryBuilder.orderBy(`roomType.${query.orderByField}`, query.order);
-    } else {
-      queryBuilder.orderBy('roomType.TypeName', 'ASC');
-    }
-    
-    // Apply pagination
-    if (query.skip !== undefined) {
-      queryBuilder.skip(query.skip);
-    }
-    
-    if (query.take !== undefined) {
-      queryBuilder.take(query.take);
-    }
+  
     
     const entities = await queryBuilder.getMany();
     return entities.map(entity => this.mapToModel(entity));

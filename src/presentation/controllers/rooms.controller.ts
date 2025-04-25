@@ -42,9 +42,9 @@ export class RoomController {
     });
   }
 
-  @Post()
-  @ApiOperation({ summary: 'Create a new room' })
-  async create(@Body() createRoomDto: CreateRoomDto) {
+  @Post('create')
+  @ApiOperation({ summary: 'Create a new room (alternative endpoint)' })
+  async createAlternative(@Body() createRoomDto: CreateRoomDto) {
     return this.roomUseCase.create(createRoomDto);
   }
 
