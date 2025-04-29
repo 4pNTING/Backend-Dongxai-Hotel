@@ -20,6 +20,7 @@ export class RoleEntity {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
   
+
   @OneToMany(() => StaffEntity, staff => staff.role)
   staffs: StaffEntity[];
 }

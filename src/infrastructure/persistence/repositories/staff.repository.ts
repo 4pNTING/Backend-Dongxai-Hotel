@@ -155,7 +155,12 @@ export class StaffRepository {
       position: entity.Position, 
       salary: entity.Salary,
       roleId: entity.roleId,
-      role: entity.role,
+      role: entity.role ? {
+        id: entity.role.id,
+        name: entity.role.name,
+        createdAt: entity.role.createdAt,
+        updatedAt: entity.role.updatedAt
+      } : undefined,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt
     };

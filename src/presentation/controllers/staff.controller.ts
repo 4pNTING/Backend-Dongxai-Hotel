@@ -28,6 +28,7 @@ export class StaffController {
       getType: 'one' 
     });
   }
+  
 
   @Post('query')
   async queryStaff(@Body() query: QueryDto) {

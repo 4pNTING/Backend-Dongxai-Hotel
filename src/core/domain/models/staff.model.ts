@@ -1,4 +1,6 @@
 // src/core/domain/models/staff.model.ts
+import { RoleModel } from './role.model'; // Make sure to import the RoleModel
+
 export class StaffModel {
   id: number;
   name: string;
@@ -10,7 +12,7 @@ export class StaffModel {
   position: string;
   salary: number;
   roleId?: number;
-  role?: any; // หรือกำหนดเป็น RoleModel ที่เหมาะสม
+  role?: RoleModel; // Properly typed role property
   createdAt: Date;
   updatedAt: Date;
 }

@@ -61,5 +61,5 @@ export class StaffEntity {
 
   @ManyToOne(() => RoleEntity, role => role.staffs)
   @JoinColumn({ name: 'roleId' })
-  role?: RoleEntity;
+  role: RoleEntity;
 }

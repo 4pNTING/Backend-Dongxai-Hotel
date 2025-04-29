@@ -17,8 +17,7 @@ export class RoomTypeRepository {
   async findAll(query: QueryDto): Promise<RoomTypeModel[]> {
     const queryBuilder = this.roomTypeRepository.createQueryBuilder('roomType');
     
-  
-    
+
     const entities = await queryBuilder.getMany();
     return entities.map(entity => this.mapToModel(entity));
   }

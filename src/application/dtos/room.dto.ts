@@ -1,6 +1,6 @@
 // src/application/dtos/room.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, Min, IsOptional } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 
 export class CreateRoomDto {
@@ -21,7 +21,23 @@ export class CreateRoomDto {
   RoomPrice: number;
 }
 
-export class UpdateRoomDto extends PartialType(CreateRoomDto) {}
+export class UpdateRoomDto {
+  @ApiProperty({ example: 1, description: 'Room type ID', required: false })
+  @IsOptional()
+  @IsNumber()
+  TypeId?: number;
+
+  @ApiProperty({ example: 1, description: 'Room status ID', required: false })
+  @IsOptional()
+  @IsNumber()
+  StatusId?: number;
+
+  @ApiProperty({ example: 1500.50, description: 'Room price', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  RoomPrice?: number;
+}
 
 // DTO สำหรับการตอบกลับ
 export class RoomResponseDto {

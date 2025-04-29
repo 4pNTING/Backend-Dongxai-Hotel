@@ -25,7 +25,7 @@ async function bootstrap() {
       new ValidationPipe({
         whitelist: true, // ลบ properties ที่ไม่ได้ประกาศใน DTO
         transform: true, // แปลง payload เป็น DTO
-        forbidNonWhitelisted: true, // ปฏิเสธ request ที่มี properties ไม่ได้ประกาศ
+        forbidNonWhitelisted: false, // ปฏิเสธ request ที่มี properties ไม่ได้ประกาศ
         validationError: {
           target: false,
           value: false

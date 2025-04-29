@@ -189,7 +189,7 @@ export class AuthService implements AuthServicePort {
     };
     
     // กำหนดเวลาหมดอายุ
-    const accessTokenExpiresIn = 3600; // 1 hour
+    const accessTokenExpiresIn = 2 * 3600; // 2 hour
     const refreshTokenExpiresIn = 7 * 24 * 3600; // 7 days
     
     // สร้าง tokens

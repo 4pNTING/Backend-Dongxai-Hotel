@@ -1,17 +1,23 @@
-// src/infrastructure/persistence/repositories/room.repository.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoomEntity } from '../entities/room.entity';
+import { RoomTypeEntity } from '../entities/room-type.entity';
+import { RoomStatusEntity } from '../entities/room-status.entity';
 import { RoomModel } from '../../../core/domain/models/room.model';
 import { QueryDto } from '../../../application/common/query.dto';
 import { CreateRoomDto, UpdateRoomDto } from '../../../application/dtos/room.dto';
+import { RoomMapper } from '../../mappers/room.mapper';
 
 @Injectable()
 export class RoomRepository {
   constructor(
     @InjectRepository(RoomEntity)
     private readonly roomRepository: Repository<RoomEntity>,
+    @InjectRepository(RoomTypeEntity)
+    private readonly roomTypeRepository: Repository<RoomTypeEntity>,
+    @InjectRepository(RoomStatusEntity)
+    private readonly roomStatusRepository: Repository<RoomStatusEntity>
   ) {}
 
   async findAll(query: QueryDto): Promise<RoomModel[]> {
@@ -67,7 +73,7 @@ export class RoomRepository {
     }
     
     const entities = await queryBuilder.getMany();
-    return entities.map(entity => this.mapToModel(entity));
+    return RoomMapper.toModelList(entities);
   }
 
   async findById(id: number, relations: string[] = []): Promise<RoomModel | null> {
@@ -83,7 +89,7 @@ export class RoomRepository {
       return null;
     }
     
-    return this.mapToModel(entity);
+    return RoomMapper.toModel(entity);
   }
 
   async findAvailableRooms(checkInDate: Date, checkOutDate: Date): Promise<RoomModel[]> {
@@ -100,23 +106,43 @@ export class RoomRepository {
         { checkInDate, checkOutDate })
       .getMany();
     
-    return entities.map(entity => this.mapToModel(entity));
+    return RoomMapper.toModelList(entities);
   }
 
   async create(data: CreateRoomDto): Promise<RoomModel> {
-    const entity = this.roomRepository.create({
-      TypeId: data.TypeId,
-      StatusId: data.StatusId,
-      RoomPrice: data.RoomPrice
-    });
+    // ใช้ mapper เพื่อแปลง DTO เป็นข้อมูลสำหรับสร้าง entity
+    const entityData = RoomMapper.toEntity(data);
+    const entity = this.roomRepository.create(entityData);
     
     const savedEntity = await this.roomRepository.save(entity);
     return this.findById(savedEntity.RoomId); // Fetch with relations
   }
 
   async update(id: number, data: UpdateRoomDto): Promise<RoomModel> {
+    // Validate room type if provided
+    if (data.TypeId !== undefined) {
+      const roomType = await this.roomTypeRepository.findOne({ 
+        where: { TypeId: data.TypeId } 
+      });
+      if (!roomType) {
+        throw new NotFoundException(`Room type with ID ${data.TypeId} not found`);
+      }
+    }
+  
+    // Validate room status if provided
+    if (data.StatusId !== undefined) {
+      const roomStatus = await this.roomStatusRepository.findOne({ 
+        where: { StatusId: data.StatusId } 
+      });
+      if (!roomStatus) {
+        throw new NotFoundException(`Room status with ID ${data.StatusId} not found`);
+      }
+    }
+  
+    // Find the room
     const entity = await this.roomRepository.findOne({
       where: { RoomId: id },
+      relations: ['roomType', 'roomStatus'] // Explicitly load relations
     });
     
     if (!entity) {
@@ -124,45 +150,31 @@ export class RoomRepository {
     }
     
     // Update only the fields that are provided
-    if (data.TypeId !== undefined) entity.TypeId = data.TypeId;
-    if (data.StatusId !== undefined) entity.StatusId = data.StatusId;
-    if (data.RoomPrice !== undefined) entity.RoomPrice = data.RoomPrice;
-    
-    await this.roomRepository.save(entity);
-    return this.findById(id); // Fetch with relations
+    if (data.TypeId !== undefined) {
+      entity.TypeId = data.TypeId;
+      // Optional: Update roomType reference
+      entity.roomType = { TypeId: data.TypeId } as RoomTypeEntity;
+    }
+    if (data.StatusId !== undefined) {
+      entity.StatusId = data.StatusId;
+      // Optional: Update roomStatus reference
+      entity.roomStatus = { StatusId: data.StatusId } as RoomStatusEntity;
+    }
+    if (data.RoomPrice !== undefined) {
+      entity.RoomPrice = data.RoomPrice;
+    }
+  
+    // Save with additional options
+    await this.roomRepository.save(entity, {
+      reload: true // Ensures the latest data is reloaded
+    });
+  
+    // ดึงข้อมูลล่าสุดและคืนค่า
+    return this.findById(id);
   }
 
   async delete(id: number): Promise<boolean> {
     const result = await this.roomRepository.delete(id);
     return result.affected > 0;
-  }
-
-  private mapToModel(entity: RoomEntity): RoomModel {
-    const model = new RoomModel();
-    model.RoomId = entity.RoomId;
-    model.TypeId = entity.TypeId;
-    model.StatusId = entity.StatusId;
-    model.RoomPrice = entity.RoomPrice;
-    
-    // Map related entities if available
-    if (entity.roomType) {
-      model.roomType = {
-        TypeId: entity.roomType.TypeId,
-        TypeName: entity.roomType.TypeName
-      };
-    }
-    
-    if (entity.roomStatus) {
-      model.roomStatus = {
-        StatusId: entity.roomStatus.StatusId,
-        StatusName: entity.roomStatus.StatusName
-      };
-    }
-    
-    model.bookings = entity.bookings;
-    model.checkIns = entity.checkIns;
-    model.checkOuts = entity.checkOuts;
-    
-    return model;
   }
 }
