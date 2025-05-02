@@ -29,8 +29,7 @@ export class StaffEntity {
   @Column({ nullable: true }) // If you want to allow null temporarily
   password: string;
 
-  @Column({ length: 30, nullable: true })
-  Position: string;
+
 
   @Column({ type: 'float',nullable: true  })
   Salary: number;

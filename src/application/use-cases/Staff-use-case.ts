@@ -17,6 +17,11 @@ export class StaffUseCase {
   }
 
   async update(id: number, dto: UpdateStaffDto): Promise<boolean> {
+    // จัดการกับรหัสผ่านพิเศษ "**UNCHANGED**"
+    if (dto.password === '**UNCHANGED**') {
+      delete dto.password;
+    }
+    
     return this.staffService.update(id, dto);
   }
 

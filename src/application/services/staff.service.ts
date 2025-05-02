@@ -50,7 +50,7 @@ export class StaffService implements StaffServicePort {
     // Check if username is being updated and is already taken
     if (dto.userName && dto.userName !== staff.userName) {
       const existingByUserName = await this.staffRepository.findByUsername(dto.userName);
-      if (existingByUserName && existingByUserName.id !== Number(id)) {
+      if (existingByUserName && existingByUserName.StaffId !== Number(id)) {
         throw new ConflictException(`Username ${dto.userName} is already taken`);
       }
     }

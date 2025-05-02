@@ -1,62 +1,92 @@
 // src/application/dtos/staff.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
-import { PartialType } from '@nestjs/swagger';
-import { RoleDto } from './role.dto';
+import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateStaffDto {
-  @ApiProperty({ example: 'Jane' })
+  @ApiProperty({ example: 'John Doe' })
   @IsNotEmpty()
   @IsString()
-  firstName: string;
+  StaffName: string;
 
-  @ApiProperty({ example: 'Smith' })
+  @ApiProperty({ example: 'MALE' })
   @IsNotEmpty()
   @IsString()
-  lastName: string;
+  gender: string;
 
-  @ApiProperty({ example: 'jane.smith@hotel.com' })
+  @ApiProperty({ example: 1234567890 })
   @IsNotEmpty()
-  @IsEmail()
-  email: string;
+  @IsNumber()
+  tel: number;
 
-  @ApiProperty({ example: '+1234567890', required: false })
-  @IsOptional()
-  @IsString()
-  phoneNumber?: string;
-
-  @ApiProperty({ example: 'Manager' })
+  @ApiProperty({ example: '123 Main St' })
   @IsNotEmpty()
   @IsString()
-  position: string;
+  address: string;
 
-  roleId: number;
-  role?: RoleDto;
-
-  @ApiProperty({ example: 'Front Desk', required: false })
-  @IsOptional()
-  @IsString()
-  department?: string;
-
-  @ApiProperty({ example: 'jsmith' })
+  @ApiProperty({ example: 'johndoe' })
   @IsNotEmpty()
   @IsString()
   userName: string;
+
+  @ApiProperty({ example: 5000000 })
+  @IsNotEmpty()
+  @IsNumber()
+  salary: number;
+
+  @ApiProperty({ example: 1 })
+  @IsNotEmpty()
+  @IsNumber()
+  roleId: number;
 
   @ApiProperty({ example: 'password123' })
   @IsNotEmpty()
   @IsString()
   @MinLength(6)
-  
   password: string;
-  
-  @ApiProperty({ default: true })
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
 }
 
-export class UpdateStaffDto extends PartialType(CreateStaffDto) {}
+export class UpdateStaffDto {
+  @ApiProperty({ example: 'John Doe' })
+  @IsOptional()
+  @IsString()
+  StaffName?: string;
+
+  @ApiProperty({ example: 'MALE' })
+  @IsOptional()
+  @IsString()
+  gender?: string;
+
+  @ApiProperty({ example: 1234567890 })
+  @IsOptional()
+  @IsNumber()
+  tel?: number;
+
+  @ApiProperty({ example: '123 Main St' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiProperty({ example: 'johndoe' })
+  @IsOptional()
+  @IsString()
+  userName?: string;
+
+  @ApiProperty({ example: 5000000 })
+  @IsOptional()
+  @IsNumber()
+  salary?: number;
+
+  @ApiProperty({ example: 1 })
+  @IsOptional()
+  @IsNumber()
+  roleId?: number;
+
+  @ApiProperty({ example: 'password123' })
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  password?: string;
+}
 
 export class ChangePasswordDto {
   @ApiProperty()

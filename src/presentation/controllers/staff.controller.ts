@@ -1,5 +1,5 @@
 // src/presentation/controllers/staff.controller.ts
-import { Controller, Get, Post, Body, Param, Put, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Query, UseGuards, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CreateStaffDto, UpdateStaffDto } from '../../application/dtos/staff.dto';
 import { QueryDto } from '../../application/common/query.dto';
@@ -40,7 +40,7 @@ export class StaffController {
     return this.staffUseCase.create(createStaffDto);
   }
 
-  @Put(':id')
+  @Patch(':id')  // เปลี่ยนจาก @Put(':id') เป็น @Patch(':id')
   async update(@Param('id') id: number, @Body() updateStaffDto: UpdateStaffDto) {
     return this.staffUseCase.update(id, updateStaffDto);
   }

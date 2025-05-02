@@ -16,26 +16,45 @@ export class BookingRepository {
 
   async findAll(query: QueryDto): Promise<BookingModel[]> {
     const queryBuilder = this.bookingRepository.createQueryBuilder('booking');
-    
-    // Apply select
-    if (query.select && query.select.length > 0) {
-      queryBuilder.select(query.select.map(field => `booking.${field}`));
-    }
-    
-    // Apply relationsSV
+
+    // Apply relations first to define aliases
     if (query.relations && query.relations.length > 0) {
+      const validRelations = ['room', 'customer', 'staff']; // กำหนด relations ที่ถูกต้อง
       query.relations.forEach(relation => {
-        queryBuilder.leftJoinAndSelect(`booking.${relation}`, relation);
+        if (validRelations.includes(relation)) {
+          queryBuilder.leftJoinAndSelect(`booking.${relation}`, relation);
+        }
       });
     }
-    
+
+    // Apply select
+    if (query.select && query.select.length > 0) {
+      const selectFields = query.select.map(field => {
+        if (field.includes('.')) {
+          // Handle relation fields like staff.StaffName
+          const [relation, column] = field.split('.');
+          // ตรวจสอบว่า relation มีอยู่ใน query
+          if (query.relations && query.relations.includes(relation)) {
+            return `${relation}.${column}`;
+          }
+          // ถ้า relation ไม่มีอยู่ใน relations ให้ข้ามหรือจัดการตามความเหมาะสม
+          return null;
+        }
+        // Handle booking fields
+        return `booking.${field}`;
+      }).filter(field => field !== null); // กรอง field ที่ไม่ถูกต้องออก
+      if (selectFields.length > 0) {
+        queryBuilder.select(selectFields);
+      }
+    }
+
     // Apply filters
     if (query.filter) {
       Object.keys(query.filter).forEach(key => {
         queryBuilder.andWhere(`booking.${key} = :${key}`, { [key]: query.filter[key] });
       });
     }
-    
+
     // Apply sorting
     if (query.orderBy) {
       Object.keys(query.orderBy).forEach(key => {
@@ -46,16 +65,20 @@ export class BookingRepository {
     } else {
       queryBuilder.orderBy('booking.BookingDate', 'DESC');
     }
-    
+
     // Apply pagination
     if (query.skip !== undefined) {
       queryBuilder.skip(query.skip);
     }
-    
+
     if (query.take !== undefined) {
       queryBuilder.take(query.take);
     }
-    
+
+    // Log the query for debugging
+    console.log('Generated SQL:', queryBuilder.getQuery());
+    console.log('Parameters:', queryBuilder.getParameters());
+
     const entities = await queryBuilder.getMany();
     return entities.map(entity => this.mapToModel(entity));
   }
@@ -63,23 +86,23 @@ export class BookingRepository {
   async findById(id: number): Promise<BookingModel | null> {
     const entity = await this.bookingRepository.findOne({
       where: { BookingId: id },
-      relations: ['room', 'customer', 'staff']
+      relations: ['room', 'customer', 'staff'],
     });
-    
+
     if (!entity) {
       return null;
     }
-    
+
     return this.mapToModel(entity);
   }
 
   async findByCustomerId(CustomerId: number): Promise<BookingModel[]> {
     const entities = await this.bookingRepository.find({
-      where: { CustomerId: CustomerId },
+      where: { CustomerId },
       relations: ['room', 'customer', 'staff'],
-      order: { BookingDate: 'DESC' }
+      order: { BookingDate: 'DESC' },
     });
-    
+
     return entities.map(entity => this.mapToModel(entity));
   }
 
@@ -87,7 +110,7 @@ export class BookingRepository {
     const entity = this.bookingRepository.create({
       ...data,
     });
-    
+
     const savedEntity = await this.bookingRepository.save(entity);
     return this.mapToModel(savedEntity);
   }
@@ -96,13 +119,13 @@ export class BookingRepository {
     const entity = await this.bookingRepository.findOne({
       where: { BookingId: id },
     });
-    
+
     if (!entity) {
       throw new NotFoundException(`Booking with id ${id} not found`);
     }
-    
+
     Object.assign(entity, data);
-    
+
     const updatedEntity = await this.bookingRepository.save(entity);
     return this.mapToModel(updatedEntity);
   }
@@ -121,16 +144,16 @@ export class BookingRepository {
     model.CheckoutDate = entity.CheckoutDate;
     model.CustomerId = entity.CustomerId;
     model.StaffId = entity.StaffId;
-    model.BookingStatus = entity.BookingStatus; // เพิ่มบรรทัดนี้
-    model.CreatedAt = entity.CreatedAt; // เพิ่มฟิลด์นี้ด้วยถ้าต้องการ
-    
+    model.BookingStatus = entity.BookingStatus;
+    model.CreatedAt = entity.CreatedAt;
+
     // Add related entities if they exist
     if (entity.room) model.room = entity.room;
     if (entity.customer) model.customer = entity.customer;
     if (entity.staff) model.staff = entity.staff;
     if (entity.checkIns) model.checkIns = entity.checkIns;
     if (entity.cancellations) model.cancellations = entity.cancellations;
-    
+
     return model;
   }
 }

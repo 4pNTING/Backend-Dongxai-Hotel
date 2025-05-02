@@ -36,7 +36,7 @@ export class AuthService implements AuthServicePort {
     this.logger.debug(`Login successful for user: ${dto.userName}`);
     
     // รีโวคโทเค็นเก่าทั้งหมดของผู้ใช้ (optional - เปิดเมื่อต้องการให้เข้าสู่ระบบได้เพียงอุปกรณ์เดียวเท่านั้น)
-     await this.refreshTokenRepository.revokeAllUserTokens(staff.id);
+     await this.refreshTokenRepository.revokeAllUserTokens(staff.StaffId);
     
     // สร้างโทเค็นใหม่
     return this.generateTokens(staff);
@@ -84,7 +84,6 @@ export class AuthService implements AuthServicePort {
         password: hashedPassword,
         firstName: dto.firstName,
         lastName: dto.lastName,
-        position: dto.role,
         email: `${dto.userName}@example.com`,
         isActive: true
       };
@@ -176,7 +175,7 @@ export class AuthService implements AuthServicePort {
     const role = (staff.role?.name || 'user').toLowerCase();
     
     const accessTokenPayload = {
-      sub: staff.id,
+      sub: staff.StaffId, // แก้ไขจาก staff.id เป็น staff.StaffId
       userName: staff.userName,
       role: role 
     };
@@ -203,7 +202,7 @@ export class AuthService implements AuthServicePort {
     
     // บันทึก refresh token ลงฐานข้อมูล
     await this.refreshTokenRepository.createRefreshToken(
-      staff.id,
+      staff.StaffId, // แก้ไขเป็น staff.StaffId
       refreshToken,
       refreshTokenExpiresIn
     );
@@ -213,7 +212,7 @@ export class AuthService implements AuthServicePort {
       refreshToken,
       expiresIn: accessTokenExpiresIn,
       user: {
-        id: staff.id,
+        id: staff.StaffId, // แก้ไขจาก staff.id เป็น staff.StaffId
         userName: staff.userName,
         role: role,
         roleId: staff.roleId

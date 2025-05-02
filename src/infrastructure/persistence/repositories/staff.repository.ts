@@ -1,5 +1,5 @@
 // src/infrastructure/persistence/repositories/staff.repository.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StaffEntity } from '../entities/staff.entity';
@@ -9,23 +9,52 @@ import { CreateStaffDto, UpdateStaffDto } from '../../../application/dtos/staff.
 
 @Injectable()
 export class StaffRepository {
+  private readonly logger = new Logger(StaffRepository.name);
+
   constructor(
     @InjectRepository(StaffEntity)
     private readonly staffRepository: Repository<StaffEntity>,
   ) { }
 
   async findAll(query: QueryDto): Promise<StaffModel[]> {
+    this.logger.log(`Finding all staff with query: ${JSON.stringify(query)}`);
+    
     const queryBuilder = this.staffRepository.createQueryBuilder('staff');
 
-    // Apply select
+    // Apply select with support for relations
     if (query.select && query.select.length > 0) {
-      queryBuilder.select(query.select.map(field => `staff.${field}`));
+      const selectFields = [];
+      
+      query.select.forEach(field => {
+        // Handle relation fields (containing '.')
+        if (field.includes('.')) {
+          // We don't need to do anything here as they'll be handled by leftJoinAndSelect
+        } else {
+          // Regular fields
+          selectFields.push(`staff.${field}`);
+        }
+      });
+      
+      if (selectFields.length > 0) {
+        queryBuilder.select(selectFields);
+      }
     }
 
-    // Apply relations
+    // Apply relations with support for nested relations
     if (query.relations && query.relations.length > 0) {
       query.relations.forEach(relation => {
-        queryBuilder.leftJoinAndSelect(`staff.${relation}`, relation);
+        // For nested relations (contains '.')
+        if (relation.includes('.')) {
+          const relationParts = relation.split('.');
+          const parentRelation = relationParts[0];
+          const childRelation = relationParts.slice(1).join('.');
+          
+          queryBuilder.leftJoinAndSelect(`staff.${parentRelation}`, parentRelation);
+          queryBuilder.leftJoinAndSelect(`${parentRelation}.${childRelation}`, relationParts.join('_'));
+        } else {
+          // For regular relations
+          queryBuilder.leftJoinAndSelect(`staff.${relation}`, relation);
+        }
       });
     }
 
@@ -39,7 +68,7 @@ export class StaffRepository {
     // Apply search
     if (query.search) {
       queryBuilder.andWhere(
-        '(staff.firstName ILIKE :search OR staff.lastName ILIKE :search OR staff.email ILIKE :search OR staff.userName ILIKE :search)', // เปลี่ยนจาก username เป็น userName
+        '(staff.StaffName ILIKE :search OR staff.userName ILIKE :search)',
         { search: `%${query.search}%` }
       );
     }
@@ -67,17 +96,24 @@ export class StaffRepository {
       queryBuilder.take(query.take);
     }
 
-    // Always exclude password from select
-    queryBuilder.addSelect('staff.password', 'password');
+    // Log the SQL query for debugging
+    this.logger.debug(`Generated SQL: ${queryBuilder.getSql()}`);
 
-    const entities = await queryBuilder.getMany();
-    return entities.map(entity => this.mapToModel(entity));
+    // Execute query based on getType
+    if (query.getType === 'one') {
+      const entity = await queryBuilder.getOne();
+      return entity ? [this.mapToModel(entity)] : [];
+    } else {
+      const entities = await queryBuilder.getMany();
+      return entities.map(entity => this.mapToModel(entity));
+    }
   }
 
   async findById(id: number, includePassword: boolean = false): Promise<StaffModel | null> {
     const queryBuilder = this.staffRepository
       .createQueryBuilder('staff')
-      .where('staff.id = :id', { id }).leftJoinAndSelect('staff.role', 'role');
+      .where('staff.StaffId = :id', { id })
+      .leftJoinAndSelect('staff.role', 'role');
 
     if (includePassword) {
       queryBuilder.addSelect('staff.password');
@@ -95,7 +131,7 @@ export class StaffRepository {
   async findByUsername(username: string, includePassword: boolean = false): Promise<StaffModel | null> {
     const queryBuilder = this.staffRepository.createQueryBuilder('staff')
       .where('staff.userName = :username', { username })
-      .leftJoinAndSelect('staff.role', 'role'); // เพิ่มการ join role
+      .leftJoinAndSelect('staff.role', 'role');
   
     if (includePassword) {
       queryBuilder.addSelect('staff.password');
@@ -105,15 +141,20 @@ export class StaffRepository {
     return entity ? this.mapToModel(entity) : null;
   }
 
-
-
   async create(data: CreateStaffDto): Promise<StaffModel> {
-    const entity = this.staffRepository.create({
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
+    // ใช้ข้อมูลจาก DTO โดยตรงเนื่องจากตอนนี้ DTO มีฟิลด์ที่ตรงกับ Entity แล้ว
+    const entityData = {
+      StaffName: data.StaffName,
+      Gender: data.gender || 'UNKNOWN', // ใช้ gender จาก DTO หรือค่าเริ่มต้น
+      Tel: data.tel,
+      Address: data.address,
+      userName: data.userName,
+      password: data.password,
+      Salary: data.salary || 0, // ใช้ salary จาก DTO หรือค่าเริ่มต้น
+      roleId: data.roleId || 3 // ใช้ roleId จาก DTO หรือค่าเริ่มต้น
+    };
+  
+    const entity = this.staffRepository.create(entityData);
     const savedEntity = await this.staffRepository.save(entity);
     return this.mapToModel(savedEntity);
   }
@@ -137,7 +178,7 @@ export class StaffRepository {
   }
 
   async delete(id: number): Promise<boolean> {
-    const result = await this.staffRepository.delete(id);
+    const result = await this.staffRepository.delete({ StaffId: id });
     return result.affected > 0;
   }
 
@@ -145,14 +186,13 @@ export class StaffRepository {
     const staffModel = new StaffModel();
     return {
       ...staffModel,
-      id: entity.StaffId,
-      name: entity.StaffName,
+      StaffId: entity.StaffId,      // ใช้ StaffId (ตรงกับใน Model)
+      StaffName: entity.StaffName,   // ใช้ StaffName (ตรงกับใน Model)
       gender: entity.Gender,
       tel: entity.Tel,
       address: entity.Address,
       userName: entity.userName,
       password: entity.password,
-      position: entity.Position, 
       salary: entity.Salary,
       roleId: entity.roleId,
       role: entity.role ? {
@@ -165,5 +205,4 @@ export class StaffRepository {
       updatedAt: entity.updatedAt
     };
   }
-
 }

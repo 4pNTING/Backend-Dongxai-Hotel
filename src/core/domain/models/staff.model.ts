@@ -2,17 +2,17 @@
 import { RoleModel } from './role.model'; // Make sure to import the RoleModel
 
 export class StaffModel {
-  id: number;
-  name: string;
+  StaffId: number;       // แก้ไขจาก id เป็น StaffId
+  StaffName: string;     // แก้ไขจาก name เป็น StaffName
   gender: string;
   tel: number;
   address: string;
   userName: string;
   password?: string;
-  position: string;
+
   salary: number;
   roleId?: number;
-  role?: RoleModel; // Properly typed role property
+  role?: RoleModel;
   createdAt: Date;
   updatedAt: Date;
 }
