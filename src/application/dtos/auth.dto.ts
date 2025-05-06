@@ -55,7 +55,8 @@ export class TokenDto {
       id: 1,
       userName: 'admin',
       role: 'admin',
-      roleId: 1
+      roleId: 1,
+      type: 'staff'
     }
   })
   user?: {
@@ -63,6 +64,7 @@ export class TokenDto {
     userName: string;
     role: string;
     roleId?: number;
+    type: string; // เพิ่มฟิลด์ type เพื่อระบุประเภทผู้ใช้ (staff หรือ customer)
   };
 }
 

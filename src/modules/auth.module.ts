@@ -1,4 +1,4 @@
-
+// auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -10,6 +10,7 @@ import { AuthController } from '../presentation/controllers/auth.controller';
 import { JwtStrategy } from '../infrastructure/config/jwt.strategy';
 import { LocalStrategy } from '../infrastructure/security/strategies/local.strategy';
 import { StaffModule } from './staff.module';
+import { CustomersModule } from './customers.module'; // เพิ่มการ import CustomersModule
 import { RefreshTokenEntity } from '../infrastructure/persistence/entities/refresh-token.entity';
 import { RefreshTokenRepository } from '../infrastructure/persistence/repositories/refresh-token.repository';
 
@@ -26,6 +27,7 @@ import { RefreshTokenRepository } from '../infrastructure/persistence/repositori
       }),
     }),
     StaffModule,
+    CustomersModule, // เพิ่ม CustomersModule ที่นี่
   ],
   controllers: [AuthController],
   providers: [

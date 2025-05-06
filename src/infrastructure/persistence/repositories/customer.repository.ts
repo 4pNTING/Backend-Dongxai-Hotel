@@ -35,6 +35,20 @@ export class CustomerRepository {
     return this.mapToModel(savedEntity);
   }
 
+  // เพิ่มเมธอดนี้ในไฟล์ CustomerRepository
+  async findByUsername(username: string, includePassword: boolean = false): Promise<CustomerModel | null> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('customer')
+      .where('customer.userName = :username', { username });
+    
+    if (includePassword) {
+      queryBuilder.addSelect('customer.password');
+    }
+    
+    const entity = await queryBuilder.getOne();
+    return entity ? this.mapToModel(entity) : null;
+  }
+
   async update(id: number, dto: UpdateCustomerDto): Promise<CustomerModel> {
     await this.repository.update(id, {
       ...dto,
@@ -61,17 +75,22 @@ export class CustomerRepository {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
   
-    return new CustomerModel({
-      id: entity.CustomerId,
-      firstName: firstName,
-      lastName: lastName,
-      gender: entity.CustomerGender,
-      phoneNumber: entity.CustomerTel.toString(),
-      address: entity.CustomerAddress,
-      postcode: entity.CustomerPostcode,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt
-    });
+    const model = new CustomerModel();
+    model.id = entity.CustomerId;
+    model.CustomerId = entity.CustomerId;
+    model.firstName = firstName;
+    model.lastName = lastName;
+    model.gender = entity.CustomerGender;
+    model.phoneNumber = entity.CustomerTel.toString();
+    model.address = entity.CustomerAddress;
+    model.postcode = entity.CustomerPostcode;
+    model.userName = entity.userName;
+    model.password = entity.password;
+    model.roleId = entity.roleId || 2; // ค่าเริ่มต้นเป็น 2 สำหรับ customer
+    model.createdAt = entity.createdAt;
+    model.updatedAt = entity.updatedAt;
+  
+    return model;
   }
   
 }

@@ -33,6 +33,16 @@ export class CreateCustomerDto {
   @IsNotEmpty()
   @IsInt()
   CustomerPostcode: number;
+
+  @ApiProperty({ example: 'somchai123' })
+  @IsNotEmpty()
+  @IsString()
+  userName: string;
+
+  @ApiProperty({ example: 'password123' })
+  @IsNotEmpty()
+  @IsString()
+  password: string;
 }
 
 export class UpdateCustomerDto extends PartialType(CreateCustomerDto) {}

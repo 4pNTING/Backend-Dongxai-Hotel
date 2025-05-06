@@ -7,6 +7,7 @@ import { LoginDto, RefreshTokenDto, RegisterDto, TokenDto } from '../dtos/auth.d
 import { AuthServicePort } from '../ports/auth.port';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid'; 
+import { CustomerRepository } from '../../infrastructure/persistence/repositories/customer.repository';
 
 @Injectable()
 export class AuthService implements AuthServicePort {
@@ -15,70 +16,105 @@ export class AuthService implements AuthServicePort {
   constructor(
     private readonly staffRepository: StaffRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
+    private readonly customerRepository: CustomerRepository,
     private readonly jwtService: JwtService,
   ) {}
 
   async login(dto: LoginDto): Promise<TokenDto> {
     this.logger.debug(`Attempting login for user: ${dto.userName}`);
+
+    // กำหนดค่าเริ่มต้น
+    let user = null;
+    let userType = '';
     
+    // ค้นหาใน staff ก่อน
     const staff = await this.staffRepository.findByUsername(dto.userName);
-    if (!staff) {
-      this.logger.warn(`Login failed - User not found: ${dto.userName}`);
-      throw new UnauthorizedException('Invalid credentials');
+    if (staff) {
+      const isPasswordValid = await bcrypt.compare(dto.password, staff.password);
+      if (isPasswordValid) {
+        user = staff;
+        userType = 'staff';
+      }
     }
     
-    const isPasswordValid = await bcrypt.compare(dto.password, staff.password);
-    if (!isPasswordValid) {
-      this.logger.warn(`Login failed - Invalid password for user: ${dto.userName}`);
+    // ถ้าไม่พบใน staff ให้ค้นหาใน customer
+    if (!user) {
+      const customer = await this.customerRepository.findByUsername(dto.userName);
+      if (customer) {
+        const isPasswordValid = await bcrypt.compare(dto.password, customer.password);
+        if (isPasswordValid) {
+          user = customer;
+          userType = 'customer';
+        }
+      }
+    }
+    
+    // ถ้าไม่พบผู้ใช้หรือรหัสผ่านไม่ถูกต้อง
+    if (!user) {
+      this.logger.warn(`Login failed - Invalid credentials for user: ${dto.userName}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    this.logger.debug(`Login successful for user: ${dto.userName}`);
+    this.logger.debug(`Login successful for ${userType}: ${dto.userName}`);
     
-    // รีโวคโทเค็นเก่าทั้งหมดของผู้ใช้ (optional - เปิดเมื่อต้องการให้เข้าสู่ระบบได้เพียงอุปกรณ์เดียวเท่านั้น)
-     await this.refreshTokenRepository.revokeAllUserTokens(staff.StaffId);
+    // รีโวคโทเค็นเก่าทั้งหมดของผู้ใช้
+    if (userType === 'staff') {
+      await this.refreshTokenRepository.revokeAllUserTokens(user.StaffId);
+    } else {
+      await this.refreshTokenRepository.revokeAllUserTokens(user.CustomerId);
+    }
     
     // สร้างโทเค็นใหม่
-    return this.generateTokens(staff);
+    return this.generateTokens(user, userType);
   }
 
   async validateUser(userName: string, password: string): Promise<any> {
     this.logger.debug(`Validating user: ${userName}`);
     
+    // ตรวจสอบ staff ก่อน
     const staff = await this.staffRepository.findByUsername(userName, true);
-    if (!staff) {
-      this.logger.warn(`Validation failed - User not found: ${userName}`);
-      return null;
+    if (staff && staff.password) {
+      const isPasswordValid = await bcrypt.compare(password, staff.password);
+      if (isPasswordValid) {
+        this.logger.debug(`Validation successful for staff: ${userName}`);
+        const { password: _, ...result } = staff;
+        return { ...result, type: 'staff' };
+      }
     }
-  
-    if (!staff.password) {
-      this.logger.warn(`Validation failed - Password not set for user: ${userName}`);
-      return null;
+    
+    // ถ้าไม่พบใน staff ให้ตรวจสอบใน customer
+    const customer = await this.customerRepository.findByUsername(userName, true);
+    if (customer && customer.password) {
+      const isPasswordValid = await bcrypt.compare(password, customer.password);
+      if (isPasswordValid) {
+        this.logger.debug(`Validation successful for customer: ${userName}`);
+        const { password: _, ...result } = customer;
+        return { ...result, type: 'customer' };
+      }
     }
-  
-    const isPasswordValid = await bcrypt.compare(password, staff.password);
-    if (!isPasswordValid) {
-      this.logger.warn(`Validation failed - Invalid password for user: ${userName}`);
-      return null;
-    }
-  
-    this.logger.debug(`Validation successful for user: ${userName}`);
-    const { password: _, ...result } = staff;
-    return result;
+    
+    this.logger.warn(`Validation failed for user: ${userName}`);
+    return null;
   }
 
   async register(dto: RegisterDto): Promise<TokenDto> {
     this.logger.debug(`Attempting registration for user: ${dto.userName}`);
     
+    // ตรวจสอบว่า username ซ้ำหรือไม่ ทั้งใน staff และ customer
     const existingStaff = await this.staffRepository.findByUsername(dto.userName);
-    if (existingStaff) {
+    const existingCustomer = await this.customerRepository.findByUsername(dto.userName);
+    
+    if (existingStaff || existingCustomer) {
       this.logger.warn(`Registration failed - Username already exists: ${dto.userName}`);
       throw new UnauthorizedException('Username already exists');
     }
-  
+    
+    // เข้ารหัสรหัสผ่าน
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     
     try {
+      // ในตัวอย่างนี้ เราจะสร้าง staff เป็นค่าเริ่มต้น
+      // สามารถเพิ่มพารามิเตอร์เพื่อกำหนดว่าจะสร้าง staff หรือ customer ได้
       const staffData = {
         userName: dto.userName,
         password: hashedPassword,
@@ -87,20 +123,21 @@ export class AuthService implements AuthServicePort {
         email: `${dto.userName}@example.com`,
         isActive: true
       };
-  
+    
       const createData = {
         ...staffData,
         StaffName: `${dto.firstName} ${dto.lastName}`,
-        Tel: 0,
-        Address: ''
+        gender: 'UNKNOWN',
+        tel: 0,
+        address: ''
       } as any;
-  
+    
       const staff = await this.staffRepository.create(createData);
       
       this.logger.debug(`Registration successful for user: ${dto.userName}`);
       
       // สร้างทั้ง access token และ refresh token
-      return this.generateTokens(staff);
+      return this.generateTokens(staff, 'staff');
     } catch (error) {
       this.logger.error(`Registration error for user ${dto.userName}: ${error.message}`, error.stack);
       throw error;
@@ -130,14 +167,24 @@ export class AuthService implements AuthServicePort {
       // รีโวคโทเค็นเก่า (one-time use)
       await this.refreshTokenRepository.revokeToken(tokenEntity.id);
       
-      // หาข้อมูล staff จาก ID ใน payload
-      const staff = await this.staffRepository.findById(payload.sub);
-      if (!staff) {
+      // ตรวจสอบประเภทผู้ใช้จาก payload
+      const userType = payload.type || 'staff';
+      let user;
+      
+      if (userType === 'staff') {
+        // หาข้อมูล staff จาก ID ใน payload
+        user = await this.staffRepository.findById(payload.sub);
+      } else {
+        // หาข้อมูล customer จาก ID ใน payload
+        user = await this.customerRepository.findById(payload.sub);
+      }
+      
+      if (!user) {
         throw new UnauthorizedException('User not found');
       }
       
       // สร้างโทเค็นใหม่
-      return this.generateTokens(staff);
+      return this.generateTokens(user, userType);
     } catch (error) {
       if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
         throw new UnauthorizedException('Invalid refresh token');
@@ -164,27 +211,34 @@ export class AuthService implements AuthServicePort {
   }
   
   // Helper function to generate tokens
-  private async generateTokens(staff: any): Promise<TokenDto> {
-    console.log('Staff in generateTokens:', {
-      id: staff.id,
-      userName: staff.userName,
-      role: staff.role
-    });
+  private async generateTokens(user: any, userType: string): Promise<TokenDto> {
+    let id, role, roleId;
     
-    // ประกาศตัวแปร role ก่อนใช้
-    const role = (staff.role?.name || 'user').toLowerCase();
+    if (userType === 'staff') {
+      id = user.StaffId;
+      role = (user.role?.name || 'user').toLowerCase();
+      roleId = user.roleId;
+      
+      this.logger.debug(`Generating tokens for staff: ${user.userName}, ID: ${id}, Role: ${role}`);
+    } else {
+      id = user.CustomerId;
+      role = 'customer';
+      roleId = user.roleId || 2; // default roleId for customer
+      
+      this.logger.debug(`Generating tokens for customer: ${user.userName}, ID: ${id}, Role: ${role}`);
+    }
     
     const accessTokenPayload = {
-      sub: staff.StaffId, // แก้ไขจาก staff.id เป็น staff.StaffId
-      userName: staff.userName,
-      role: role 
+      sub: id,
+      userName: user.userName,
+      role: role,
+      type: userType
     };
     
-    console.log('Access token payload:', accessTokenPayload);
-    
     const refreshTokenPayload = {
-      sub: staff.id,
+      sub: id,
       jti: uuidv4(),
+      type: userType
     };
     
     // กำหนดเวลาหมดอายุ
@@ -202,7 +256,7 @@ export class AuthService implements AuthServicePort {
     
     // บันทึก refresh token ลงฐานข้อมูล
     await this.refreshTokenRepository.createRefreshToken(
-      staff.StaffId, // แก้ไขเป็น staff.StaffId
+      id,
       refreshToken,
       refreshTokenExpiresIn
     );
@@ -212,10 +266,11 @@ export class AuthService implements AuthServicePort {
       refreshToken,
       expiresIn: accessTokenExpiresIn,
       user: {
-        id: staff.StaffId, // แก้ไขจาก staff.id เป็น staff.StaffId
-        userName: staff.userName,
+        id: id,
+        userName: user.userName,
         role: role,
-        roleId: staff.roleId
+        roleId: roleId,
+        type: userType
       }
     };
   }

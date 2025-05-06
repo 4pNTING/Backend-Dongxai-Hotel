@@ -22,6 +22,15 @@ export class CustomerEntity {
 
   @Column({ nullable: true })
   CustomerPostcode: number;
+  
+  @Column({ nullable: true})
+userName: string;
+
+  @Column({ nullable: true })
+  password: string;
+
+  @Column({ type: 'integer', default: 2, nullable: true })
+  roleId: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
