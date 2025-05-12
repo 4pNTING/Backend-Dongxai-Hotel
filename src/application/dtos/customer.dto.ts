@@ -42,7 +42,7 @@ export class CreateCustomerDto {
   @ApiProperty({ example: 'password123' })
   @IsNotEmpty()
   @IsString()
-  password: string;
+  password: string;     
 }
 
 export class UpdateCustomerDto extends PartialType(CreateCustomerDto) {}
