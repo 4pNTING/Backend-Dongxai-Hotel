@@ -70,27 +70,20 @@ export class CustomerRepository {
   }
 
   private mapToModel(entity: CustomerEntity): CustomerModel {
-    // แยกชื่อและนามสกุลจาก CustomerName
-    const nameParts = entity.CustomerName.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+  const model = new CustomerModel();
+  model.CustomerId = entity.CustomerId;
+  model.CustomerName = entity.CustomerName;
+  model.CustomerGender = entity.CustomerGender;
+  model.CustomerTel = entity.CustomerTel;
+  model.CustomerPostcode = entity.CustomerPostcode;
+  model.CustomerAddress = entity.CustomerAddress;
+  model.userName = entity.userName;
+  model.password = entity.password;
+  model.roleId = entity.roleId || 2; // ค่าเริ่มต้นเป็น 2 สำหรับ customer
+  model.createdAt = entity.createdAt;
+  model.updatedAt = entity.updatedAt;
   
-    const model = new CustomerModel();
-    model.id = entity.CustomerId;
-    model.CustomerId = entity.CustomerId;
-    model.firstName = firstName;
-    model.lastName = lastName;
-    model.gender = entity.CustomerGender;
-    model.phoneNumber = entity.CustomerTel.toString();
-    model.address = entity.CustomerAddress;
-    model.postcode = entity.CustomerPostcode;
-    model.userName = entity.userName;
-    model.password = entity.password;
-    model.roleId = entity.roleId || 2; // ค่าเริ่มต้นเป็น 2 สำหรับ customer
-    model.createdAt = entity.createdAt;
-    model.updatedAt = entity.updatedAt;
-  
-    return model;
-  }
+  return model;
+}
   
 }
