@@ -9,6 +9,7 @@ export const METADATA_KEY = {
     STAFF: 'STAFF',
     USER: 'USER',
     BOOKING: 'BOOKING',
+    BOOKING_STATUS: 'booking-statuses',
     COURSE: 'COURSE',
     COMPANY: 'COMPANY',
     CUSTOMER: 'CUSTOMER',

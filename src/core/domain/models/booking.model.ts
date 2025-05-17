@@ -6,6 +6,10 @@ import { CheckInEntity } from '../../../infrastructure/persistence/entities/chec
 import { CancellationEntity } from '../../../infrastructure/persistence/entities/cancellation.entity';
 
 
+
+// src/core/domain/models/booking.model.ts (ปรับปรุงใหม่)
+import { BookingStatusModel } from './booking-status.model';
+
 export class BookingModel {
   BookingId: number;
   BookingDate: Date;
@@ -14,13 +18,14 @@ export class BookingModel {
   CheckoutDate: Date;
   CustomerId: number;
   StaffId: number;
-  BookingStatus: string;
+  StatusId: number; // เพิ่ม StatusId แทน BookingStatus string
   CreatedAt: Date;
   
   // Relations
   room?: any;
   customer?: any;
   staff?: any;
+  bookingStatus?: BookingStatusModel; // เพิ่มความสัมพันธ์กับ BookingStatusModel
   checkIns?: any[];
   cancellations?: any[];
 }

@@ -29,24 +29,21 @@ export class CreateBookingDto {
   @Type(() => Date)
   CheckoutDate: Date;
 
-  @ApiProperty({ example: 1 })
+   @ApiProperty({ example: 1 })
   @IsNotEmpty()
   @IsNumber()
-  GuestId: number;
+  CustomerId: number;
+
 
   @ApiProperty({ example: 1 })
   @IsNotEmpty()
   @IsNumber()
   StaffId: number;
 
-  @ApiProperty({ 
-    example: 'Confirmed',
-    enum: BookingStatusEnum ,
-    description: 'Booking status (Confirmed, Pending, Cancelled, etc.)' 
-  })
+  @ApiProperty({ example: 1, description: 'Booking status ID' })
   @IsNotEmpty()
-  @IsEnum(BookingStatusEnum)
-  BookingStatus: BookingStatusEnum ;
+  @IsNumber()
+  StatusId: number;
 }
 
 export class UpdateBookingDto extends PartialType(CreateBookingDto) {}

@@ -1,4 +1,4 @@
-// src/application/use-cases/staff.use-case.ts
+// src/application/use-cases/Staff-use-case.ts
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateStaffDto, UpdateStaffDto } from '../dtos/staff.dto';
 import { StaffServicePort } from '../ports/staff.port';
@@ -17,11 +17,7 @@ export class StaffUseCase {
   }
 
   async update(id: number, dto: UpdateStaffDto): Promise<boolean> {
-    // จัดการกับรหัสผ่านพิเศษ "**UNCHANGED**"
-    if (dto.password === '**UNCHANGED**') {
-      delete dto.password;
-    }
-    
+    // จัดการกับรหัสผ่านพิเศษ "**UNCHANGED**" ที่ service แทน
     return this.staffService.update(id, dto);
   }
 
@@ -43,12 +39,4 @@ export class StaffUseCase {
   async findByUsername(username: string): Promise<StaffModel | null> {
     return this.staffService.findByUsername(username);
   }
-
-  // async changePassword(id: number, currentPassword: string, newPassword: string): Promise<boolean> {
-  //   return this.staffService.changePassword(id, currentPassword, newPassword);
-  // }
-
-  // async toggleActive(id: number): Promise<boolean> {
-  //   return this.staffService.toggleActive(id);
-  // }
 }

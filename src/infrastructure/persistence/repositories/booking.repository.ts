@@ -12,14 +12,14 @@ export class BookingRepository {
   constructor(
     @InjectRepository(BookingEntity)
     private readonly bookingRepository: Repository<BookingEntity>,
-  ) {}
+  ) { }
 
   async findAll(query: QueryDto): Promise<BookingModel[]> {
     const queryBuilder = this.bookingRepository.createQueryBuilder('booking');
 
     // Apply relations first to define aliases
     if (query.relations && query.relations.length > 0) {
-      const validRelations = ['room', 'customer', 'staff']; // กำหนด relations ที่ถูกต้อง
+      const validRelations = ['room', 'customer', 'staff,BookingStatus']; // กำหนด relations ที่ถูกต้อง
       query.relations.forEach(relation => {
         if (validRelations.includes(relation)) {
           queryBuilder.leftJoinAndSelect(`booking.${relation}`, relation);
@@ -107,12 +107,15 @@ export class BookingRepository {
   }
 
   async create(data: CreateBookingDto): Promise<BookingModel> {
-    const entity = this.bookingRepository.create({
-      ...data,
-    });
+    try {
+      const entity = this.bookingRepository.create(data);
+      const savedEntity = await this.bookingRepository.save(entity) as BookingEntity;
+      return this.mapToModel(savedEntity);
+    } catch (error) {
+      console.error('Error in create booking:', error);
+      throw error;
+    }
 
-    const savedEntity = await this.bookingRepository.save(entity);
-    return this.mapToModel(savedEntity);
   }
 
   async update(id: number, data: UpdateBookingDto): Promise<BookingModel> {
@@ -144,13 +147,20 @@ export class BookingRepository {
     model.CheckoutDate = entity.CheckoutDate;
     model.CustomerId = entity.CustomerId;
     model.StaffId = entity.StaffId;
-    model.BookingStatus = entity.BookingStatus;
+    model.StatusId = entity.StatusId;
     model.CreatedAt = entity.CreatedAt;
 
     // Add related entities if they exist
     if (entity.room) model.room = entity.room;
     if (entity.customer) model.customer = entity.customer;
     if (entity.staff) model.staff = entity.staff;
+    // เพิ่มความสัมพันธ์กับ BookingStatus
+    if (entity.BookingStatus) {
+      model.bookingStatus = {
+        StatusId: entity.BookingStatus.StatusId,
+        StatusName: entity.BookingStatus.StatusName
+      };
+    }
     if (entity.checkIns) model.checkIns = entity.checkIns;
     if (entity.cancellations) model.cancellations = entity.cancellations;
 

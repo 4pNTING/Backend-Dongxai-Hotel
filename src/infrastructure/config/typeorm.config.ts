@@ -8,7 +8,7 @@ export default registerAs('database', () => ({
   username: process.env.DATABASE_USER || 'postgres',
   password: process.env.DATABASE_PASSWORD || '2101995',
   database: process.env.DATABASE_NAME || 'hotel_management',
-  synchronize: process.env.DB_SYNC === 'false',
+  synchronize: process.env.DB_SYNC === 'true',
   logging: process.env.DB_LOGGING === 'true',
   entities: [join(__dirname, '../../**/*.entity{.ts,.js}')],
 }));

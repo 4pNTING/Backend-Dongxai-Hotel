@@ -23,13 +23,10 @@ export class StaffService implements StaffServicePort {
   }
 
   async create(dto: CreateStaffDto): Promise<StaffModel> {
- 
     const existingByUserName = await this.staffRepository.findByUsername(dto.userName);
     if (existingByUserName) {
       throw new ConflictException(`Username ${dto.userName} is already taken`);
     }
-    
- 
     
     // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -42,6 +39,8 @@ export class StaffService implements StaffServicePort {
   }
 
   async update(id: number, dto: UpdateStaffDto): Promise<boolean> {
+    // ลบ this.logger.log ออกจากบรรทัดนี้
+    
     const staff = await this.staffRepository.findById(id);
     if (!staff) {
       throw new NotFoundException(`Staff with ID ${id} not found`);
@@ -55,26 +54,21 @@ export class StaffService implements StaffServicePort {
       }
     }
     
-    // // Check if email is being updated and is already taken
-    // if (dto.email && dto.email !== staff.email) {
-    //   const existingByEmail = await this.staffRepository.findByEmail(dto.email);
-    //   if (existingByEmail && existingByEmail.id !== Number(id)) {
-    //     throw new ConflictException(`Email ${dto.email} is already registered`);
-    //   }
-      
-    // }
-    
     // Hash password if it's being updated
     let dataToUpdate = { ...dto };
-    if (dto.password) {
+    if (dto.password && dto.password !== '**UNCHANGED**') {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
       dataToUpdate = {
         ...dataToUpdate,
         password: hashedPassword
       };
+    } else if (dto.password === '**UNCHANGED**') {
+      // ลบ password ออกเพื่อไม่ให้อัปเดต
+      delete dataToUpdate.password;
     }
     
     await this.staffRepository.update(id, dataToUpdate);
+    // ลบ this.logger.log ออกจากบรรทัดนี้ด้วย
     return true;
   }
 
@@ -89,10 +83,6 @@ export class StaffService implements StaffServicePort {
   async findByUsername(username: string): Promise<StaffModel | null> {
     return this.staffRepository.findByUsername(username);
   }
-
-  // async findByEmail(email: string): Promise<StaffModel | null> {
-  //   return this.staffRepository.findByEmail(email);
-  // }
 
   async changePassword(id: number, currentPassword: string, newPassword: string): Promise<boolean> {
     const staff = await this.staffRepository.findById(id, true);
@@ -113,15 +103,4 @@ export class StaffService implements StaffServicePort {
     await this.staffRepository.update(id, { password: hashedPassword });
     return true;
   }
-
-  // async toggleActive(id: number): Promise<boolean> {
-  //   const staff = await this.staffRepository.findById(id);
-  //   if (!staff) {
-  //     throw new NotFoundException(`Staff with ID ${id} not found`);
-  //   }
-  
-  //   await this.staffRepository.update(id, { isActive: !staff.isActive });
-  //   return true;
-  // }
-  
 }

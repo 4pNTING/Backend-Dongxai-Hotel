@@ -159,23 +159,32 @@ export class StaffRepository {
     return this.mapToModel(savedEntity);
   }
 
-  async update(id: number, data: UpdateStaffDto): Promise<StaffModel> {
-    const entity = await this.staffRepository.findOne({
-      where: { StaffId: id }
-    });
+ async update(id: number, data: UpdateStaffDto): Promise<StaffModel> {
+  const entity = await this.staffRepository.findOne({
+    where: { StaffId: id }
+  });
 
-    if (!entity) {
-      throw new NotFoundException(`Staff with id ${id} not found`);
-    }
-
-    Object.assign(entity, {
-      ...data,
-      updatedAt: new Date(),
-    });
-
-    const updated = await this.staffRepository.save(entity);
-    return this.mapToModel(updated);
+  if (!entity) {
+    throw new NotFoundException(`Staff with id ${id} not found`);
   }
+
+  // แปลงข้อมูลจาก DTO เป็น Entity
+  if (data.StaffName !== undefined) entity.StaffName = data.StaffName;
+  if (data.gender !== undefined) entity.Gender = data.gender;
+  if (data.tel !== undefined) entity.Tel = data.tel;
+  if (data.address !== undefined) entity.Address = data.address;
+  if (data.userName !== undefined) entity.userName = data.userName;
+  if (data.salary !== undefined) entity.Salary = data.salary;
+  if (data.roleId !== undefined) entity.roleId = data.roleId;
+  if (data.password !== undefined) entity.password = data.password;
+  
+  // อัปเดตเวลา
+  entity.updatedAt = new Date();
+
+  // บันทึกการเปลี่ยนแปลง
+  const updated = await this.staffRepository.save(entity);
+  return this.mapToModel(updated);
+}
 
   async delete(id: number): Promise<boolean> {
     const result = await this.staffRepository.delete({ StaffId: id });

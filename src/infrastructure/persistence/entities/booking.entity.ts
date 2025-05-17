@@ -5,8 +5,8 @@ import { CustomerEntity } from './customer.entity';
 import { StaffEntity } from './staff.entity';
 import { CheckInEntity } from './check-in.entity';
 import { CancellationEntity } from './cancellation.entity';
-// src/core/enum/BookingStatus.ts
-import { BookingStatusEnum } from '../../../core/enum/BookingStatus';
+import { BookingStatusEntity } from './booking-status.entity';
+
 @Entity('bookings')
 export class BookingEntity {
   @PrimaryGeneratedColumn({ type: 'integer' })
@@ -28,11 +28,19 @@ export class BookingEntity {
   @Column({ type: 'date' })
   CheckoutDate: Date;
 
+  // แก้ไขให้ชื่อฟิลด์และชื่อคอลัมน์ตรงกัน
+  @Column({ type: 'integer', nullable: true })
+  StatusId: number; // ใช้ชื่อเดียวกันกับ JoinColumn
+
+  @ManyToOne(() => BookingStatusEntity, bookingStatus => bookingStatus.bookings)
+  @JoinColumn({ name: 'StatusId' }) // ตรงกับชื่อฟิลด์ด้านบน
+  BookingStatus: BookingStatusEntity;
+
   @Column({ type: 'integer' })
   CustomerId: number;
 
   @ManyToOne(() => CustomerEntity, customer => customer.bookings)
-  @JoinColumn({ name: 'GuestId' })
+  @JoinColumn({ name: 'CustomerId' })
   customer: CustomerEntity;
 
   @Column({ type: 'integer' })
@@ -42,9 +50,6 @@ export class BookingEntity {
   @JoinColumn({ name: 'StaffId' })
   staff: StaffEntity;
 
-  @Column({ type: 'varchar', length: 50 })
-  BookingStatus: BookingStatusEnum;
-
   @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
   CreatedAt: Date;
 
@@ -53,5 +58,4 @@ export class BookingEntity {
 
   @OneToMany(() => CancellationEntity, cancellation => cancellation.booking)
   cancellations: CancellationEntity[];
-  
 }

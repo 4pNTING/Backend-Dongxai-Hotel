@@ -16,7 +16,7 @@ import { PaymentsModule } from './modules/payments.module';
 import { CancellationsModule } from './modules/cancellations.module';
 import { AuthModule } from './modules/auth.module';
 import { RolesModule } from './modules/rold.module';
-
+import { BookingStatusModule } from './modules/booking-status.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +24,7 @@ import { RolesModule } from './modules/rold.module';
       load: [databaseConfig],
     }),
     DatabaseModule, 
+    BookingStatusModule,
     RoomTypeModule,    // Import before RoomsModule
     RoomStatusModule,  // Import before RoomsModule
     CustomersModule,

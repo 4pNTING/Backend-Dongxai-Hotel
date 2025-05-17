@@ -12,7 +12,7 @@ import { METADATA_KEY } from '../../core/constants/metadata.constant';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class BookingController {
-  constructor(private readonly bookingUseCase: BookingUseCase) {}
+  constructor(private readonly bookingUseCase: BookingUseCase) { }
 
   @Get()
   async findAll(@Query() query: QueryDto) {
@@ -20,20 +20,20 @@ export class BookingController {
   }
 
   @Post('query')  // เพิ่ม endpoint นี้
-async queryBookings(@Body() query: QueryDto) {
-  return this.bookingUseCase.query({ ...query, getType: 'many' });
-}
+  async queryBookings(@Body() query: QueryDto) {
+    return this.bookingUseCase.query({ ...query, getType: 'many' });
+  }
 
   @Get(':id')
   async findOne(@Param('id') id: number) {
-    return this.bookingUseCase.query({ 
-      filter: { id }, 
-      getType: 'one' 
+    return this.bookingUseCase.query({
+      filter: { id },
+      getType: 'one'
     });
   }
 
-  @Post()
-  async create(@Body() createBookingDto: CreateBookingDto) {
+  @Post('create')
+  async createBooking(@Body() createBookingDto: CreateBookingDto) {
     return this.bookingUseCase.create(createBookingDto);
   }
 
