@@ -19,7 +19,7 @@ export class BookingRepository {
 
     // Apply relations first to define aliases
     if (query.relations && query.relations.length > 0) {
-      const validRelations = ['room', 'customer', 'staff,BookingStatus']; // กำหนด relations ที่ถูกต้อง
+      const validRelations = ['room', 'customer', 'staff', 'BookingStatus'];
       query.relations.forEach(relation => {
         if (validRelations.includes(relation)) {
           queryBuilder.leftJoinAndSelect(`booking.${relation}`, relation);
@@ -148,7 +148,7 @@ export class BookingRepository {
     model.CustomerId = entity.CustomerId;
     model.StaffId = entity.StaffId;
     model.StatusId = entity.StatusId;
-    model.CreatedAt = entity.CreatedAt;
+    model.CreatedAt = entity.CreatedAt; 
 
     // Add related entities if they exist
     if (entity.room) model.room = entity.room;

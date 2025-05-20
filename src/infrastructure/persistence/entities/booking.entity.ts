@@ -52,6 +52,7 @@ export class BookingEntity {
 
   @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
   CreatedAt: Date;
+  
 
   @OneToMany(() => CheckInEntity, checkIn => checkIn.booking)
   checkIns: CheckInEntity[];
