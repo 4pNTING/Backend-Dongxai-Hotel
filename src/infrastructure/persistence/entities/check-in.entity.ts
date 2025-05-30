@@ -8,11 +8,11 @@ import { CheckOutEntity } from './check-out.entity';
 
 @Entity('check_ins')
 export class CheckInEntity {
-  @PrimaryGeneratedColumn({ name: 'CheckinId' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
-  CheckInId: number;
+  @PrimaryGeneratedColumn({ name: 'CheckinId' })
+  CheckinId: number; // ตรงกับฐานข้อมูล
 
-  @Column({ name: 'CheckinDate', type: 'date' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
-  CheckInDate: Date;
+  @Column({ name: 'CheckinDate', type: 'date' })
+  CheckinDate: Date; // ตรงกับฐานข้อมูล
 
   @Column({ type: 'date' })
   CheckoutDate: Date;
@@ -23,14 +23,14 @@ export class CheckInEntity {
   @Column()
   BookingId: number;
 
-  @Column({ name: 'GuestId' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
-  CustomerId: number;
+  @Column({ name: 'GuestId' })
+  GuestId: number; // ตรงกับฐานข้อมูล (ใช้ GuestId ไม่ใช่ CustomerId)
 
   @Column()
   StaffId: number;
 
   @ManyToOne(() => CustomerEntity)
-  @JoinColumn({ name: 'GuestId' }) // ใช้ชื่อคอลัมน์ที่มีอยู่เดิมในฐานข้อมูล
+  @JoinColumn({ name: 'GuestId' })
   customer: CustomerEntity;
 
   @ManyToOne(() => RoomEntity)

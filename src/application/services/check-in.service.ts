@@ -24,7 +24,12 @@ export class CheckInService {
     return this.checkInRepository.findByCustomerId(customerId);
   }
 
+  async findByGuestId(guestId: number): Promise<CheckInModel[]> {
+    return this.checkInRepository.findByGuestId(guestId);
+  }
+
   async create(dto: CreateCheckInDto): Promise<CheckInModel> {
+    // ส่ง DTO ตรงๆไป Repository จะจัดการการแปลงเอง
     return this.checkInRepository.create(dto);
   }
 
@@ -33,6 +38,8 @@ export class CheckInService {
     if (!checkIn) {
       throw new NotFoundException(`Check-in with ID ${id} not found`);
     }
+    
+    // ส่ง DTO ตรงๆไป Repository จะจัดการการแปลงเอง
     await this.checkInRepository.update(id, dto);
     return true;
   }

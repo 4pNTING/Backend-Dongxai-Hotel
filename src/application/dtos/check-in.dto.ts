@@ -5,6 +5,8 @@ import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class CreateCheckInDto {
+  // ลบ index signature ออก: [x: string]: number;
+  
   @ApiProperty({ example: '2023-09-15' })
   @IsNotEmpty()
   @IsDate()

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { QueryDto } from '../common/query.dto';
 import { BookingServicePort } from '../ports/booking.prot';
 import { BookingModel } from '../../core/domain/models/booking.model';
@@ -25,5 +25,31 @@ export class BookingUseCase {
 
   async delete(id: number): Promise<boolean> {
     return this.service.delete(id);
+  }
+
+  // ===== เพิ่ม Methods สำหรับจัดการสถานะ =====
+  
+  async getPendingConfirmations(query?: QueryDto): Promise<BookingModel[]> {
+    return this.service.getPendingConfirmations(query);
+  }
+
+  async getConfirmedBookings(query?: QueryDto): Promise<BookingModel[]> {
+    return this.service.getConfirmedBookings(query);
+  }
+
+  async getCheckedInBookings(query?: QueryDto): Promise<BookingModel[]> {
+    return this.service.getCheckedInBookings(query);
+  }
+
+  async confirmBooking(id: number): Promise<BookingModel> {
+    return this.service.confirmBooking(id);
+  }
+
+  async checkinBooking(id: number): Promise<BookingModel> {
+    return this.service.checkinBooking(id);
+  }
+
+  async checkoutBooking(id: number): Promise<BookingModel> {
+    return this.service.checkoutBooking(id);
   }
 }

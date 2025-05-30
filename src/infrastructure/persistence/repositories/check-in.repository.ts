@@ -62,7 +62,7 @@ export class CheckInRepository {
 
   async findById(id: number, relations: string[] = []): Promise<CheckInModel | null> {
     const entity = await this.checkInRepository.findOne({
-      where: { CheckInId: id }, // แก้จาก CheckinId เป็น CheckInId ให้ตรงกับ entity
+      where: { CheckinId: id }, // ใช้ CheckinId ตรงกับ Entity
       relations: relations
     });
     
@@ -85,57 +85,117 @@ export class CheckInRepository {
     
     return this.mapToModel(entity);
   }
+
   async findByCustomerId(customerId: number): Promise<CheckInModel[]> {
+    // ใช้ GuestId เพราะในฐานข้อมูลใช้ GuestId
     const entities = await this.checkInRepository.find({
-      where: { CustomerId: customerId },
+      where: { GuestId: customerId },
       relations: ['booking', 'room', 'customer', 'staff', 'checkOuts']
     });
     
     return entities.map(entity => this.mapToModel(entity));
   }
-  
 
-  async create(data: CreateCheckInDto): Promise<CheckInModel> {
-    const entity = this.checkInRepository.create(data);
+  async findByGuestId(guestId: number): Promise<CheckInModel[]> {
+    const entities = await this.checkInRepository.find({
+      where: { GuestId: guestId },
+      relations: ['booking', 'room', 'customer', 'staff', 'checkOuts']
+    });
     
-    const savedEntity = await this.checkInRepository.save(entity);
-    return this.mapToModel(savedEntity);
+    return entities.map(entity => this.mapToModel(entity));
+  }
+
+  async create(data: CreateCheckInDto | any): Promise<CheckInModel> {
+    console.log('=== DEBUG: CheckInRepository.create ===');
+    console.log('1. Received data:', JSON.stringify(data, null, 2));
+    
+    // แปลงข้อมูลจาก DTO ให้ตรงกับ Entity
+    const entityData = {
+      CheckinDate: data.CheckInDate, // DTO ใช้ CheckInDate -> Entity ใช้ CheckinDate
+      CheckoutDate: data.CheckoutDate,
+      RoomId: data.RoomId,
+      BookingId: data.BookingId,
+      GuestId: data.CustomerId, // DTO ใช้ CustomerId -> Entity ใช้ GuestId
+      StaffId: data.StaffId
+    };
+
+    console.log('2. Converted entity data:', JSON.stringify(entityData, null, 2));
+
+    const entity = this.checkInRepository.create(entityData);
+    console.log('3. Created entity (before save):', JSON.stringify(entity, null, 2));
+    
+    try {
+      const savedEntity = await this.checkInRepository.save(entity);
+      console.log('4. Saved entity (after save):', JSON.stringify(savedEntity, null, 2));
+      
+      const model = this.mapToModel(savedEntity);
+      console.log('5. Final model:', JSON.stringify(model, null, 2));
+      
+      return model;
+    } catch (error) {
+      console.error('6. ERROR during save:', error);
+      console.error('   Error message:', error.message);
+      console.error('   Error stack:', error.stack);
+      throw error;
+    }
   }
 
   async update(id: number, data: UpdateCheckInDto): Promise<CheckInModel> {
     const entity = await this.checkInRepository.findOne({
-      where: { CheckInId: id } // แก้จาก CheckinId เป็น CheckInId ให้ตรงกับ entity
+      where: { CheckinId: id } // ใช้ CheckinId ตรงกับ Entity
     });
     
     if (!entity) {
       throw new NotFoundException(`Check-in with id ${id} not found`);
     }
     
-    Object.assign(entity, data);
+    // แปลงข้อมูลจาก DTO ให้ตรงกับ Entity โดยไม่ใช้ type annotation
+    const updateData = {};
+    
+    if (data.CheckInDate) {
+      (updateData as any).CheckinDate = data.CheckInDate; // DTO -> Entity
+    }
+    if (data.CheckoutDate) {
+      (updateData as any).CheckoutDate = data.CheckoutDate;
+    }
+    if (data.RoomId) {
+      (updateData as any).RoomId = data.RoomId;
+    }
+    if (data.BookingId) {
+      (updateData as any).BookingId = data.BookingId;
+    }
+    if (data.CustomerId) {
+      (updateData as any).GuestId = data.CustomerId; // DTO -> Entity
+    }
+    if (data.StaffId) {
+      (updateData as any).StaffId = data.StaffId;
+    }
+    
+    Object.assign(entity, updateData);
     
     const updatedEntity = await this.checkInRepository.save(entity);
     return this.mapToModel(updatedEntity);
   }
 
   async delete(id: number): Promise<boolean> {
-    const result = await this.checkInRepository.delete(id);
+    const result = await this.checkInRepository.delete({ CheckinId: id });
     return result.affected > 0;
   }
 
   private mapToModel(entity: CheckInEntity): CheckInModel {
     return new CheckInModel({
-      CheckInId: entity.CheckInId, // แก้จาก CheckinId เป็น CheckInId ให้ตรงกับ entity
-      CheckInDate: entity.CheckInDate, // แก้จาก CheckinDate เป็น CheckInDate ให้ตรงกับ entity
+      CheckInId: entity.CheckinId, // Entity: CheckinId -> Model: CheckInId
+      CheckInDate: entity.CheckinDate, // Entity: CheckinDate -> Model: CheckInDate
       CheckoutDate: entity.CheckoutDate,
       RoomId: entity.RoomId,
       BookingId: entity.BookingId,
-      CustomerId: entity.CustomerId, // เปลี่ยนจาก GuestId เป็น CustomerId
+      CustomerId: entity.GuestId, // Entity: GuestId -> Model: CustomerId
       StaffId: entity.StaffId,
       booking: entity.booking,
       room: entity.room,
       customer: entity.customer,
-      staff: entity.staff
-      // ลบ checkOuts ออกเนื่องจากไม่มีใน entity
+      staff: entity.staff,
+      checkOuts: entity.checkOuts
     });
   }
 }

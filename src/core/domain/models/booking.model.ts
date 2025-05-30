@@ -25,7 +25,7 @@ export class BookingModel {
   room?: any;
   customer?: any;
   staff?: any;
-  bookingStatus?: BookingStatusModel; // เพิ่มความสัมพันธ์กับ BookingStatusModel
+  BookingStatus?: BookingStatusModel; // เพิ่มความสัมพันธ์กับ BookingStatusModel
   checkIns?: any[];
   cancellations?: any[];
 }

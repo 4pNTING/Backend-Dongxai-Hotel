@@ -33,8 +33,8 @@ export class BookingEntity {
   StatusId: number; // ใช้ชื่อเดียวกันกับ JoinColumn
 
   @ManyToOne(() => BookingStatusEntity, bookingStatus => bookingStatus.bookings)
-  @JoinColumn({ name: 'StatusId' }) // ตรงกับชื่อฟิลด์ด้านบน
-  BookingStatus: BookingStatusEntity;
+@JoinColumn({ name: 'StatusId' })
+BookingStatus: BookingStatusEntity;
 
   @Column({ type: 'integer' })
   CustomerId: number;
