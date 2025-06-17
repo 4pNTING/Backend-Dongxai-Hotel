@@ -9,42 +9,49 @@ import { CheckOutEntity } from './check-out.entity';
 @Entity('check_ins')
 export class CheckInEntity {
   @PrimaryGeneratedColumn({ name: 'CheckinId' })
-  CheckinId: number; // ตรงกับฐานข้อมูล
+  CheckInId: number;
 
   @Column({ name: 'CheckinDate', type: 'date' })
-  CheckinDate: Date; // ตรงกับฐานข้อมูล
+  CheckInDate: Date;
 
-  @Column({ type: 'date' })
+  @Column({ name: 'CheckoutDate', type: 'date' })
   CheckoutDate: Date;
 
-  @Column()
+  // ===== Foreign Key Columns =====
+  @Column({ name: 'RoomId' })
   RoomId: number;
 
-  @Column()
+  @Column({ name: 'BookingId' })
   BookingId: number;
 
-  @Column({ name: 'GuestId' })
-  GuestId: number; // ตรงกับฐานข้อมูล (ใช้ GuestId ไม่ใช่ CustomerId)
+  @Column({ name: 'CustomerId' }) 
+  CustomerId: number;
 
-  @Column()
+  @Column({ name: 'StaffId' })
   StaffId: number;
 
-  @ManyToOne(() => CustomerEntity)
-  @JoinColumn({ name: 'GuestId' })
+  // ===== Relations (เหมือน Booking Entity) =====
+  @ManyToOne(() => CustomerEntity, customer => customer.checkIns)
+  @JoinColumn({ name: 'CustomerId' }) 
   customer: CustomerEntity;
 
-  @ManyToOne(() => RoomEntity)
+  @ManyToOne(() => RoomEntity, room => room.checkIns)
   @JoinColumn({ name: 'RoomId' })
   room: RoomEntity;
 
-  @ManyToOne(() => BookingEntity)
+  @ManyToOne(() => BookingEntity, booking => booking.checkIns)
   @JoinColumn({ name: 'BookingId' })
   booking: BookingEntity;
 
-  @ManyToOne(() => StaffEntity)
+  @ManyToOne(() => StaffEntity, staff => staff.checkIns)
   @JoinColumn({ name: 'StaffId' })
   staff: StaffEntity;
 
+  // ===== One-to-Many Relations =====
   @OneToMany(() => CheckOutEntity, checkOut => checkOut.checkIn)
   checkOuts: CheckOutEntity[];
+
+  // ===== Timestamps (เหมือน Booking Entity) =====
+  @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
+  CreatedAt: Date;
 }

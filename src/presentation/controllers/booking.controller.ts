@@ -1,3 +1,4 @@
+// src/infrastructure/controllers/booking.controller.ts
 import { Controller, Get, Post, Body, Param, Patch, Delete, Query, UseGuards, HttpStatus, HttpCode } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateBookingDto, UpdateBookingDto } from '../../application/dtos/booking.dto';
@@ -27,7 +28,7 @@ export class BookingController {
     });
   }
 
-  @Post()
+  @Post('create')
   async create(@Body() createBookingDto: CreateBookingDto) {
     return this.bookingUseCase.create(createBookingDto);
   }
@@ -44,24 +45,26 @@ export class BookingController {
 
   // ===== Booking Workflow =====
   @Patch(':id/confirm')
-  @ApiOperation({ summary: 'Confirm a booking' })
   async confirmBooking(@Param('id') id: number) {
     return this.bookingUseCase.confirmBooking(id);
   }
 
   @Patch(':id/checkin')
-  @ApiOperation({ summary: 'Check-in a booking' })
   async checkinBooking(@Param('id') id: number) {
     return this.bookingUseCase.checkinBooking(id);
   }
 
   @Patch(':id/checkout')
-  @ApiOperation({ summary: 'Check-out a booking' })
   async checkoutBooking(@Param('id') id: number) {
     return this.bookingUseCase.checkoutBooking(id);
   }
 
-  // ===== Query Helpers =====
+  
+  @Patch(':id/cancel')
+  async cancelBooking(@Param('id') id: number) {
+    return this.bookingUseCase.cancelBooking(id);
+  }
+
   @Post('query')
   async queryBookings(@Body() query: QueryDto) {
     return this.bookingUseCase.query({ ...query, getType: 'many' });

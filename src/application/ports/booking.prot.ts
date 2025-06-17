@@ -9,11 +9,18 @@ export interface BookingServicePort {
   update(id: number, dto: UpdateBookingDto): Promise<boolean>;
   delete(id: number): Promise<boolean>;
   
-  // เพิ่ม methods สำหรับจัดการสถานะ
+
   getPendingConfirmations(query?: QueryDto): Promise<BookingModel[]>;
   getConfirmedBookings(query?: QueryDto): Promise<BookingModel[]>;
   getCheckedInBookings(query?: QueryDto): Promise<BookingModel[]>;
+  getCancelledBookings(query?: QueryDto): Promise<BookingModel[]>; 
+  getCompletedBookings(query?: QueryDto): Promise<BookingModel[]>; 
+  
+
   confirmBooking(id: number): Promise<BookingModel>;
   checkinBooking(id: number): Promise<BookingModel>;
   checkoutBooking(id: number): Promise<BookingModel>;
+  cancelBooking(id: number): Promise<BookingModel>; 
+  
+
 }

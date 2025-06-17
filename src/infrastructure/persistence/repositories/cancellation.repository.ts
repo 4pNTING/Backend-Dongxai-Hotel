@@ -1,4 +1,4 @@
-// src/infrastructure/persistence/repositories/cancellation.repository.ts
+// src/infrastructure/persistence/repositories/cancellation.repository.ts (อัปเดต)
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -6,54 +6,25 @@ import { CancellationEntity } from '../entities/cancellation.entity';
 import { CancellationModel } from '../../../core/domain/models/cancellation.model';
 import { QueryDto } from '../../../application/common/query.dto';
 import { CreateCancellationDto, UpdateCancellationDto } from '../../../application/dtos/cancellation.dto';
+import { QueryBuilderService } from '../../../../src/infrastructure/services/query-builder.service';
 
 @Injectable()
 export class CancellationRepository {
   constructor(
     @InjectRepository(CancellationEntity)
     private readonly cancellationRepository: Repository<CancellationEntity>,
+    private readonly queryBuilderService: QueryBuilderService,
   ) {}
 
   async findAll(query: QueryDto): Promise<CancellationModel[]> {
     const queryBuilder = this.cancellationRepository.createQueryBuilder('cancellation');
     
-    // Apply select
-    if (query.select && query.select.length > 0) {
-      queryBuilder.select(query.select.map(field => `cancellation.${field}`));
-    }
+ 
+    this.queryBuilderService.applyBasicQuery(queryBuilder, query, 'cancellation');
     
-    // Apply relations
-    if (query.relations && query.relations.length > 0) {
-      query.relations.forEach(relation => {
-        queryBuilder.leftJoinAndSelect(`cancellation.${relation}`, relation);
-      });
-    }
-    
-    // Apply filters
-    if (query.filter) {
-      Object.keys(query.filter).forEach(key => {
-        queryBuilder.andWhere(`cancellation.${key} = :${key}`, { [key]: query.filter[key] });
-      });
-    }
-    
-    // Apply sorting
-    if (query.orderBy) {
-      Object.keys(query.orderBy).forEach(key => {
-        queryBuilder.addOrderBy(`cancellation.${key}`, query.orderBy[key]);
-      });
-    } else if (query.orderByField) {
-      queryBuilder.orderBy(`cancellation.${query.orderByField}`, query.order);
-    } else {
+ 
+    if (!query.orderBy && !query.orderByField) {
       queryBuilder.orderBy('cancellation.CancelDate', 'DESC');
-    }
-    
-    // Apply pagination
-    if (query.skip !== undefined) {
-      queryBuilder.skip(query.skip);
-    }
-    
-    if (query.take !== undefined) {
-      queryBuilder.take(query.take);
     }
     
     const entities = await queryBuilder.getMany();
@@ -120,8 +91,10 @@ export class CancellationRepository {
     model.CancelDate = entity.CancelDate;
     model.StaffId = entity.StaffId;
     model.BookingId = entity.BookingId;
-    model.booking = entity.booking;
-    model.staff = entity.staff;
+    
+    // Add related entities if they exist
+    if (entity.booking) model.booking = entity.booking;
+    if (entity.staff) model.staff = entity.staff;
     
     return model;
   }

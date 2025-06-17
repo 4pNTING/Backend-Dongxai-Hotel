@@ -1,12 +1,12 @@
-// src/core/services/check-in.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CheckInRepository } from '../../infrastructure/persistence/repositories/check-in.repository';
 import { QueryDto } from '../../application/common/query.dto';
 import { CheckInModel } from '../../core/domain/models/check-in.model';
 import { CreateCheckInDto, UpdateCheckInDto } from '../../application/dtos/check-in.dto';
+import { CheckInServicePort } from '../ports/check-in.port';
 
 @Injectable()
-export class CheckInService {
+export class CheckInService implements CheckInServicePort {
   constructor(private checkInRepository: CheckInRepository) {}
 
   async query(dto: QueryDto): Promise<CheckInModel | CheckInModel[]> {
@@ -20,16 +20,19 @@ export class CheckInService {
     return this.checkInRepository.findAll(dto);
   }
 
+  async findById(id: number): Promise<CheckInModel | null> {
+    return this.checkInRepository.findById(id);
+  }
+
   async findByCustomerId(customerId: number): Promise<CheckInModel[]> {
     return this.checkInRepository.findByCustomerId(customerId);
   }
 
-  async findByGuestId(guestId: number): Promise<CheckInModel[]> {
-    return this.checkInRepository.findByGuestId(guestId);
+  async findByBookingId(bookingId: number): Promise<CheckInModel | null> {
+    return this.checkInRepository.findByBookingId(bookingId);
   }
 
   async create(dto: CreateCheckInDto): Promise<CheckInModel> {
-    // ส่ง DTO ตรงๆไป Repository จะจัดการการแปลงเอง
     return this.checkInRepository.create(dto);
   }
 
@@ -39,7 +42,6 @@ export class CheckInService {
       throw new NotFoundException(`Check-in with ID ${id} not found`);
     }
     
-    // ส่ง DTO ตรงๆไป Repository จะจัดการการแปลงเอง
     await this.checkInRepository.update(id, dto);
     return true;
   }

@@ -13,12 +13,12 @@ export class CheckOutEntity {
   @Column({ type: 'date' })
   CheckoutDate: Date;
 
-  @Column({ type: 'integer' })
-  CheckinId: number;
+  @Column({ type: 'integer', name: 'CheckInId' })
+  CheckInId: number; // เปลี่ยนจาก CheckinId เป็น CheckInId
 
   @ManyToOne(() => CheckInEntity, checkIn => checkIn.checkOuts)
-  @JoinColumn({ name: 'CheckinId' })
-  checkIn: CheckInEntity;
+  @JoinColumn({ name: 'CheckInId' })
+  checkIn: CheckInEntity; // Join ด้วย CheckInId
 
   @Column({ type: 'integer' })
   RoomId: number;

@@ -1,11 +1,18 @@
 // src/infrastructure/persistence/repositories/booking.repository.ts
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BookingEntity } from '../entities/booking.entity';
 import { BookingModel } from '../../../core/domain/models/booking.model';
 import { QueryDto } from '../../../application/common/query.dto';
 import { CreateBookingDto, UpdateBookingDto } from '../../../application/dtos/booking.dto';
+import { CreateCheckInDto } from '../../../application/dtos/check-in.dto';
+import { CreateCheckOutDto } from '../../../application/dtos/check-out.dto';
+import { CreateCancellationDto } from '../../../application/dtos/cancellation.dto';
+import { CheckInRepository } from './check-in.repository';
+import { CheckOutRepository } from './check-out.repository';
+import { CancellationRepository } from './cancellation.repository';
+import { QueryBuilderService } from '../../services/query-builder.service';
 
 @Injectable()
 export class BookingRepository {
@@ -13,8 +20,14 @@ export class BookingRepository {
 
   constructor(
     @InjectRepository(BookingEntity)
-    private readonly bookingRepository: Repository<BookingEntity>
+    private readonly bookingRepository: Repository<BookingEntity>,
+    private checkInRepository: CheckInRepository,
+    private checkOutRepository: CheckOutRepository,
+    private cancellationRepository: CancellationRepository,
+    private queryBuilderService: QueryBuilderService,
   ) { }
+
+  // ===== Basic CRUD Operations =====
 
   async findAll(query: QueryDto): Promise<BookingModel[]> {
     this.logger.log(`Finding all bookings with query: ${JSON.stringify(query)}`);
@@ -130,44 +143,7 @@ export class BookingRepository {
     // Map results
     return result.entities.map((entity, index) => {
       const rawData = result.raw[index];
-      const model = new BookingModel();
-      
-      // Map basic booking properties
-      model.BookingId = entity.BookingId;
-      model.BookingDate = entity.BookingDate;
-      model.RoomId = entity.RoomId;
-      model.CheckinDate = entity.CheckinDate;
-      model.CheckoutDate = entity.CheckoutDate;
-      model.CustomerId = entity.CustomerId;
-      model.StaffId = entity.StaffId;
-      model.StatusId = entity.StatusId;
-      model.CreatedAt = entity.CreatedAt;
-      
-      // Map relations with their nested objects
-      if (entity.room) {
-        model.room = {
-          ...entity.room,
-          roomType: entity.room.roomType || null,
-          roomStatus: entity.room.roomStatus || null
-        };
-      }
-      
-      if (entity.customer) model.customer = entity.customer;
-      if (entity.staff) model.staff = entity.staff;
-      
-      // Map BookingStatus from raw data
-      if (rawData.bookingStatus_StatusId) {
-        model.BookingStatus = {
-          StatusId: rawData.bookingStatus_StatusId,
-          StatusName: rawData.bookingStatus_StatusName
-        };
-      }
-      
-      // Map other related entities if loaded
-      if (entity.checkIns) model.checkIns = entity.checkIns;
-      if (entity.cancellations) model.cancellations = entity.cancellations;
-      
-      return model;
+      return this.mapToModel(entity, rawData);
     });
   }
 
@@ -176,8 +152,8 @@ export class BookingRepository {
       .createQueryBuilder('booking')
       .where('booking.BookingId = :id', { id })
       .leftJoinAndSelect('booking.room', 'room')
-      .leftJoinAndSelect('room.roomType', 'roomType') // Added join to roomType
-      .leftJoinAndSelect('room.roomStatus', 'roomStatus') // Added join to roomStatus
+      .leftJoinAndSelect('room.roomType', 'roomType')
+      .leftJoinAndSelect('room.roomStatus', 'roomStatus')
       .leftJoinAndSelect('booking.customer', 'customer')
       .leftJoinAndSelect('booking.staff', 'staff');
 
@@ -198,42 +174,7 @@ export class BookingRepository {
     const entity = result.entities[0];
     const rawData = result.raw[0];
     
-    const model = new BookingModel();
-    model.BookingId = entity.BookingId;
-    model.BookingDate = entity.BookingDate;
-    model.RoomId = entity.RoomId;
-    model.CheckinDate = entity.CheckinDate;
-    model.CheckoutDate = entity.CheckoutDate;
-    model.CustomerId = entity.CustomerId;
-    model.StaffId = entity.StaffId;
-    model.StatusId = entity.StatusId;
-    model.CreatedAt = entity.CreatedAt;
-    
-    // Map relations with their nested objects
-    if (entity.room) {
-      model.room = {
-        ...entity.room,
-        roomType: entity.room.roomType || null,
-        roomStatus: entity.room.roomStatus || null
-      };
-    }
-    
-    if (entity.customer) model.customer = entity.customer;
-    if (entity.staff) model.staff = entity.staff;
-    
-    // Map BookingStatus from raw data
-    if (rawData.bookingStatus_StatusId) {
-      model.BookingStatus = {
-        StatusId: rawData.bookingStatus_StatusId,
-        StatusName: rawData.bookingStatus_StatusName
-      };
-    }
-    
-    // Map other related entities if loaded
-    if (entity.checkIns) model.checkIns = entity.checkIns;
-    if (entity.cancellations) model.cancellations = entity.cancellations;
-    
-    return model;
+    return this.mapToModel(entity, rawData);
   }
 
   async findByCustomerId(CustomerId: number): Promise<BookingModel[]> {
@@ -241,8 +182,8 @@ export class BookingRepository {
       .createQueryBuilder('booking')
       .where('booking.CustomerId = :CustomerId', { CustomerId })
       .leftJoinAndSelect('booking.room', 'room')
-      .leftJoinAndSelect('room.roomType', 'roomType') // Added join to roomType
-      .leftJoinAndSelect('room.roomStatus', 'roomStatus') // Added join to roomStatus
+      .leftJoinAndSelect('room.roomType', 'roomType') 
+      .leftJoinAndSelect('room.roomStatus', 'roomStatus') 
       .leftJoinAndSelect('booking.customer', 'customer')
       .leftJoinAndSelect('booking.staff', 'staff');
 
@@ -261,42 +202,7 @@ export class BookingRepository {
     // Map results
     return result.entities.map((entity, index) => {
       const rawData = result.raw[index];
-      const model = new BookingModel();
-      
-      model.BookingId = entity.BookingId;
-      model.BookingDate = entity.BookingDate;
-      model.RoomId = entity.RoomId;
-      model.CheckinDate = entity.CheckinDate;
-      model.CheckoutDate = entity.CheckoutDate;
-      model.CustomerId = entity.CustomerId;
-      model.StaffId = entity.StaffId;
-      model.StatusId = entity.StatusId;
-      model.CreatedAt = entity.CreatedAt;
-      
-      // Map relations with their nested objects
-      if (entity.room) {
-        model.room = {
-          ...entity.room,
-          roomType: entity.room.roomType || null,
-          roomStatus: entity.room.roomStatus || null
-        };
-      }
-      
-      if (entity.customer) model.customer = entity.customer;
-      if (entity.staff) model.staff = entity.staff;
-      
-      // Map BookingStatus from raw data
-      if (rawData.bookingStatus_StatusId) {
-        model.BookingStatus = {
-          StatusId: rawData.bookingStatus_StatusId,
-          StatusName: rawData.bookingStatus_StatusName
-        };
-      }
-      
-      if (entity.checkIns) model.checkIns = entity.checkIns;
-      if (entity.cancellations) model.cancellations = entity.cancellations;
-      
-      return model;
+      return this.mapToModel(entity, rawData);
     });
   }
 
@@ -333,5 +239,289 @@ export class BookingRepository {
   async delete(id: number): Promise<boolean> {
     const result = await this.bookingRepository.delete(id);
     return result.affected > 0;
+  }
+
+  // ===== Status-Based Query Methods =====
+  
+  async getPendingConfirmations(customQuery?: QueryDto): Promise<BookingModel[]> {
+    const defaultQuery = this.queryBuilderService.createStatusQuery(1, ['room', 'customer', 'staff']);
+    defaultQuery.orderBy = { BookingDate: 'DESC' };
+    
+    const finalQuery = customQuery ? 
+      this.queryBuilderService.mergeFilters(defaultQuery, customQuery) : defaultQuery;
+    return this.findAll(finalQuery);
+  }
+
+  async getConfirmedBookings(customQuery?: QueryDto): Promise<BookingModel[]> {
+    const defaultQuery = this.queryBuilderService.createStatusQuery(2, ['room', 'customer', 'staff']);
+    defaultQuery.orderBy = { CheckinDate: 'ASC' };
+    
+    const finalQuery = customQuery ? 
+      this.queryBuilderService.mergeFilters(defaultQuery, customQuery) : defaultQuery;
+    return this.findAll(finalQuery);
+  }
+
+  async getCheckedInBookings(customQuery?: QueryDto): Promise<BookingModel[]> {
+    const defaultQuery = this.queryBuilderService.createStatusQuery(3, ['room', 'customer', 'staff']);
+    defaultQuery.orderBy = { CheckinDate: 'DESC' };
+    
+    const finalQuery = customQuery ? 
+      this.queryBuilderService.mergeFilters(defaultQuery, customQuery) : defaultQuery;
+    return this.findAll(finalQuery);
+  }
+
+  async getCancelledBookings(customQuery?: QueryDto): Promise<BookingModel[]> {
+    const defaultQuery = this.queryBuilderService.createStatusQuery(5, ['room', 'customer', 'staff']);
+    defaultQuery.orderBy = { BookingDate: 'DESC' };
+    
+    const finalQuery = customQuery ? 
+      this.queryBuilderService.mergeFilters(defaultQuery, customQuery) : defaultQuery;
+    return this.findAll(finalQuery);
+  }
+
+  async getCompletedBookings(customQuery?: QueryDto): Promise<BookingModel[]> {
+    const defaultQuery = this.queryBuilderService.createStatusQuery(4, ['room', 'customer', 'staff']);
+    defaultQuery.orderBy = { CheckoutDate: 'DESC' };
+    
+    const finalQuery = customQuery ? 
+      this.queryBuilderService.mergeFilters(defaultQuery, customQuery) : defaultQuery;
+    return this.findAll(finalQuery);
+  }
+
+  // ===== Rich Domain Workflow Methods =====
+
+  async confirmBooking(id: number): Promise<BookingModel> {
+    this.logger.log(`Confirming booking with ID: ${id}`);
+    
+    const booking = await this.findById(id);
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    if (booking.StatusId !== 1) {
+      throw new BadRequestException(
+        `Cannot confirm booking. Current status is ${booking.StatusId}, expected status 1 (pending confirmation)`
+      );
+    }
+
+    const updateData: UpdateBookingDto = { StatusId: 2 };
+    const updatedBooking = await this.update(id, updateData);
+    
+    this.logger.log(`Booking ${id} confirmed successfully`);
+    return updatedBooking;
+  }
+
+  async checkinBooking(id: number): Promise<BookingModel> {
+    this.logger.log(`Checking in booking with ID: ${id}`);
+    
+    const booking = await this.findById(id);
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    if (booking.StatusId !== 2) {
+      throw new BadRequestException(
+        `Cannot check-in booking. Current status is ${booking.StatusId}, expected status 2 (confirmed)`
+      );
+    }
+
+    // Validate check-in date
+    this.validateCheckinDate(booking.CheckinDate);
+
+    // Check for existing check-in
+    const existingCheckIn = await this.checkInRepository.findByBookingId(id);
+    if (existingCheckIn) {
+      throw new BadRequestException('Booking has already been checked in');
+    }
+
+    // Create check-in record
+    const checkInData: CreateCheckInDto = {
+      CheckInDate: new Date(),
+      CheckoutDate: booking.CheckoutDate,
+      RoomId: booking.RoomId,
+      BookingId: booking.BookingId,
+      CustomerId: booking.CustomerId,
+      StaffId: booking.StaffId
+    };
+
+    await this.checkInRepository.create(checkInData);
+
+    // Update booking status
+    const updateData: UpdateBookingDto = { StatusId: 3 };
+    const updatedBooking = await this.update(id, updateData);
+    
+    this.logger.log(`Booking ${id} checked in successfully`);
+    return updatedBooking;
+  }
+
+  async checkoutBooking(id: number): Promise<BookingModel> {
+    this.logger.log(`Checking out booking with ID: ${id}`);
+    
+    const booking = await this.findById(id);
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    if (booking.StatusId !== 3) {
+      throw new BadRequestException(
+        `Cannot check-out booking. Current status is ${booking.StatusId}, expected status 3 (checked-in)`
+      );
+    }
+
+    // Get check-in record
+    const checkIn = await this.checkInRepository.findByBookingId(id);
+    if (!checkIn) {
+      throw new BadRequestException('No check-in record found for this booking');
+    }
+
+    // Create check-out record
+    const checkOutData: CreateCheckOutDto = {
+      CheckoutDate: new Date(),
+      CheckinId: checkIn.CheckInId,
+      RoomId: booking.RoomId,
+      StaffId: booking.StaffId || 1
+    };
+
+    await this.checkOutRepository.create(checkOutData);
+
+    // Update booking status
+    const updateData: UpdateBookingDto = { StatusId: 4 };
+    const updatedBooking = await this.update(id, updateData);
+    
+    this.logger.log(`Booking ${id} checked out successfully`);
+    return updatedBooking;
+  }
+
+  async cancelBooking(id: number): Promise<BookingModel> {
+    this.logger.log(`Canceling booking with ID: ${id}`);
+    
+    const booking = await this.findById(id);
+    if (!booking) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    // Can only cancel pending (1) or confirmed (2) bookings
+    if (booking.StatusId !== 1 && booking.StatusId !== 2) {
+      throw new BadRequestException(
+        `Cannot cancel booking. Current status is ${booking.StatusId}, can only cancel pending (1) or confirmed (2) bookings`
+      );
+    }
+
+    // Create cancellation record
+    const cancellationData: CreateCancellationDto = {
+      CancelDate: new Date(),
+      StaffId: booking.StaffId || 1,
+      BookingId: booking.BookingId
+    };
+
+    await this.cancellationRepository.create(cancellationData);
+
+    // Update booking status
+    const updateData: UpdateBookingDto = { StatusId: 5 };
+    const updatedBooking = await this.update(id, updateData);
+    
+    this.logger.log(`Booking ${id} canceled successfully`);
+    return updatedBooking;
+  }
+
+  // ===== Statistics Methods =====
+
+  async getBookingStats(): Promise<{
+    pending: number;
+    confirmed: number;
+    checkedIn: number;
+    completed: number;
+    cancelled: number;
+  }> {
+    const [pending, confirmed, checkedIn, completed, cancelled] = await Promise.all([
+      this.getPendingConfirmations(),
+      this.getConfirmedBookings(),
+      this.getCheckedInBookings(),
+      this.getCompletedBookings(),
+      this.getCancelledBookings()
+    ]);
+
+    return {
+      pending: Array.isArray(pending) ? pending.length : 0,
+      confirmed: Array.isArray(confirmed) ? confirmed.length : 0,
+      checkedIn: Array.isArray(checkedIn) ? checkedIn.length : 0,
+      completed: Array.isArray(completed) ? completed.length : 0,
+      cancelled: Array.isArray(cancelled) ? cancelled.length : 0
+    };
+  }
+
+  // ===== Private Helper Methods =====
+
+  private validateCheckinDate(checkinDate: Date): void {
+    const today = new Date();
+    const scheduledCheckin = new Date(checkinDate);
+    const maxEarlyDays = 1; // Allow check-in 1 day early
+
+    const earliestAllowed = new Date(scheduledCheckin);
+    earliestAllowed.setDate(earliestAllowed.getDate() - maxEarlyDays);
+
+    // Reset time for date-only comparison
+    today.setHours(0, 0, 0, 0);
+    scheduledCheckin.setHours(0, 0, 0, 0);
+    earliestAllowed.setHours(0, 0, 0, 0);
+
+    if (today.getTime() < earliestAllowed.getTime()) {
+      throw new BadRequestException(
+        `เช็คอินก่อนกำหนดได้สูงสุด ${maxEarlyDays} วัน. วันที่เช็คอินเร็วสุด: ${earliestAllowed.toISOString().split('T')[0]}`
+      );
+    }
+
+    // Log early/late check-in for monitoring
+    const todayTime = today.getTime();
+    const checkinTime = scheduledCheckin.getTime();
+    
+    if (todayTime < checkinTime) {
+      const daysDiff = Math.ceil((checkinTime - todayTime) / (1000 * 60 * 60 * 24));
+      this.logger.log(`Early check-in ${daysDiff} day(s) approved`);
+    } else if (todayTime > checkinTime) {
+      const daysDiff = Math.ceil((todayTime - checkinTime) / (1000 * 60 * 60 * 24));
+      this.logger.log(`Late check-in ${daysDiff} day(s) allowed`);
+    }
+  }
+
+  private mapToModel(entity: BookingEntity, rawData?: any): BookingModel {
+    const model = new BookingModel();
+    
+    // Map basic booking properties
+    model.BookingId = entity.BookingId;
+    model.BookingDate = entity.BookingDate;
+    model.RoomId = entity.RoomId;
+    model.CheckinDate = entity.CheckinDate;
+    model.CheckoutDate = entity.CheckoutDate;
+    model.CustomerId = entity.CustomerId;
+    model.StaffId = entity.StaffId;
+    model.StatusId = entity.StatusId;
+    model.CreatedAt = entity.CreatedAt;
+    
+    // Map relations with their nested objects
+    if (entity.room) {
+      model.room = {
+        ...entity.room,
+        roomType: entity.room.roomType || null,
+        roomStatus: entity.room.roomStatus || null
+      };
+    }
+    
+    if (entity.customer) model.customer = entity.customer;
+    if (entity.staff) model.staff = entity.staff;
+    
+    // Map BookingStatus from raw data
+    if (rawData && rawData.bookingStatus_StatusId) {
+      model.BookingStatus = {
+        StatusId: rawData.bookingStatus_StatusId,
+        StatusName: rawData.bookingStatus_StatusName
+      };
+    }
+    
+    // Map other related entities if loaded
+    if (entity.checkIns) model.checkIns = entity.checkIns;
+    if (entity.cancellations) model.cancellations = entity.cancellations;
+    
+    return model;
   }
 }

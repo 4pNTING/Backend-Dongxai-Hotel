@@ -1,65 +1,69 @@
-// src/application/controllers/check-in.controller.ts
-import {Controller,Get, Post,Put,Delete,Body,Param,Query, HttpCode,HttpStatus} from '@nestjs/common';
-  import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-  import { CheckInService } from '../../application/services/check-in.service';
-  import { CreateCheckInDto, UpdateCheckInDto } from '../../application/dtos/check-in.dto';
-  import { QueryDto } from '../../application/common/query.dto';
-  import { CheckInModel } from '../../core/domain/models/check-in.model';
-  
-  @ApiTags('Check Ins')
-  @Controller('check-ins')
-  export class CheckInController {
-    constructor(private readonly checkInService: CheckInService) {}
-  
-    @Get()
-    @ApiOperation({ summary: 'Get all check-ins' })
-    @ApiResponse({ status: 200, description: 'List of check-ins' })
-    async getAllCheckIns(@Query() query?: QueryDto): Promise<CheckInModel[]> {
-      return this.checkInService.query(query) as Promise<CheckInModel[]>;
-    }
-  
-    @Get(':id')
-    @ApiOperation({ summary: 'Get a specific check-in by ID' })
-    @ApiResponse({ status: 200, description: 'Check-in details' })
-    @ApiResponse({ status: 404, description: 'Check-in not found' })
-    async getCheckInById(@Param('id') id: number): Promise<CheckInModel> {
-      const queryDto: QueryDto = { 
-        getType: 'one', 
-        filter: { id } 
-      };
-      return this.checkInService.query(queryDto) as Promise<CheckInModel>;
-    }
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query, UseGuards, HttpStatus, HttpCode } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CreateCheckInDto, UpdateCheckInDto } from '../../application/dtos/check-in.dto';
+import { QueryDto } from '../../application/common/query.dto';
+import { CheckInUseCase } from '../../application/use-cases/checkIn.use-case';
+import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
+import { METADATA_KEY } from '../../core/constants/metadata.constant';
 
-    @Post('customer/:customerId')  
-    async findByCustomerId(@Param('customerId') customerId: number): Promise<CheckInModel[]> {
-      return this.checkInService.findByCustomerId(customerId);
-    }
-  
-    @Post()
-    @ApiOperation({ summary: 'Create a new check-in' })
-    @ApiResponse({ status: 201, description: 'Check-in created successfully' })
-    @HttpCode(HttpStatus.CREATED)
-    async createCheckIn(@Body() data: CreateCheckInDto): Promise<CheckInModel> {
-      return this.checkInService.create(data);
-    }
-  
-    @Put(':id')
-    @ApiOperation({ summary: 'Update an existing check-in' })
-    @ApiResponse({ status: 200, description: 'Check-in updated successfully' })
-    @ApiResponse({ status: 404, description: 'Check-in not found' })
-    async updateCheckIn(
-      @Param('id') id: number, 
-      @Body() data: UpdateCheckInDto
-    ): Promise<boolean> {
-      return this.checkInService.update(id, data);
-    }
-  
-    @Delete(':id')
-    @ApiOperation({ summary: 'Delete a check-in' })
-    @ApiResponse({ status: 200, description: 'Check-in deleted successfully' })
-    @ApiResponse({ status: 404, description: 'Check-in not found' })
-    @HttpCode(HttpStatus.OK)
-    async deleteCheckIn(@Param('id') id: number): Promise<boolean> {
-      return this.checkInService.delete(id);
-    }
+@ApiTags('Check Ins')
+@Controller('check-ins')
+@UseGuards(JwtAuthGuard) // เพิ่ม Auth Guard
+@ApiBearerAuth()
+export class CheckInController {
+  constructor(private readonly checkInUseCase: CheckInUseCase) {} // ใช้ UseCase
+
+  // ===== Basic CRUD =====
+  @Get()
+  async findAll(@Query() query: QueryDto) {
+    return this.checkInUseCase.query({ ...query, getType: 'many' });
   }
+
+  @Get(':id')
+  async findOne(@Param('id') id: number) {
+    return this.checkInUseCase.query({
+      filter: { id },
+      getType: 'one'
+    });
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() createCheckInDto: CreateCheckInDto) {
+    return this.checkInUseCase.create(createCheckInDto);
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: number, @Body() updateCheckInDto: UpdateCheckInDto) {
+    return this.checkInUseCase.update(id, updateCheckInDto);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: number): Promise<boolean> {
+    return this.checkInUseCase.delete(id);
+  }
+
+  // ===== Query Helpers ===== (เหมือน Booking)
+  @Post('query')
+  async queryCheckIns(@Body() query: QueryDto) {
+    return this.checkInUseCase.query({ ...query, getType: 'many' });
+  }
+
+  // ===== Specialized Endpoints =====
+  @Post('customer/:customerId')  
+  async findByCustomerId(@Param('customerId') customerId: number) {
+    return this.checkInUseCase.findByCustomerId(customerId);
+  }
+
+  @Post('booking/:bookingId')  // ใหม่
+  async findByBookingId(@Param('bookingId') bookingId: number) {
+    return this.checkInUseCase.findByBookingId(bookingId);
+  }
+
+  // ===== Check-in Workflow ===== (เหมือน Booking Workflow)
+  @Patch(':id/checkout')
+  @ApiOperation({ summary: 'Check-out a check-in' })
+  async checkoutCheckIn(@Param('id') id: number) {
+    return this.checkInUseCase.checkoutCheckIn(id);
+  }
+}

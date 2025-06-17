@@ -1,4 +1,3 @@
-// src/infrastructure/persistence/repositories/check-in.repository.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,188 +13,326 @@ export class CheckInRepository {
     private readonly checkInRepository: Repository<CheckInEntity>,
   ) {}
 
-  async findAll(query: QueryDto): Promise<CheckInModel[]> {
-    const queryBuilder = this.checkInRepository.createQueryBuilder('checkIn');
-    
-    // Apply select
-    if (query.select && query.select.length > 0) {
-      queryBuilder.select(query.select.map(field => `checkIn.${field}`));
+  async findAll(query: QueryDto = {}): Promise<CheckInModel[]> {
+    try {
+      const queryBuilder = this.checkInRepository.createQueryBuilder('checkIn');
+      
+      // Apply relations safely
+      if (query.relations && query.relations.length > 0) {
+        const relationsArray = Array.isArray(query.relations) 
+          ? query.relations 
+          : typeof query.relations === 'string' 
+            ? [query.relations] 
+            : [];
+        
+        const validRelations = ['room', 'customer', 'staff', 'booking', 'checkOuts'];
+        
+        relationsArray.forEach(relation => {
+          if (validRelations.includes(relation)) {
+            queryBuilder.leftJoinAndSelect(`checkIn.${relation}`, relation);
+            
+            // Add nested relations for room
+            if (relation === 'room') {
+              queryBuilder.leftJoinAndSelect('room.roomType', 'roomType');
+              queryBuilder.leftJoinAndSelect('room.roomStatus', 'roomStatus');
+            }
+            
+            // Add nested relations for booking
+            if (relation === 'booking') {
+              queryBuilder.leftJoinAndSelect('booking.BookingStatus', 'bookingStatus');
+            }
+            
+            // Add nested relations for staff
+            if (relation === 'staff') {
+              queryBuilder.leftJoinAndSelect('staff.role', 'staffRole');
+            }
+          }
+        });
+      } else {
+        // Default relations - เพิ่มทั้งหมดที่จำเป็น
+        queryBuilder
+          .leftJoinAndSelect('checkIn.room', 'room')
+          .leftJoinAndSelect('room.roomType', 'roomType')
+          .leftJoinAndSelect('room.roomStatus', 'roomStatus')
+          .leftJoinAndSelect('checkIn.customer', 'customer')
+          .leftJoinAndSelect('checkIn.staff', 'staff')
+          .leftJoinAndSelect('staff.role', 'staffRole')
+          .leftJoinAndSelect('checkIn.booking', 'booking')
+          .leftJoinAndSelect('booking.BookingStatus', 'bookingStatus')
+          .leftJoinAndSelect('checkIn.checkOuts', 'checkOuts');
+      }
+
+      // Apply manual filters instead of using QueryBuilderService
+      if (query.filter) {
+        Object.keys(query.filter).forEach((key, index) => {
+          const value = query.filter[key];
+          const paramKey = `${key}_${index}`;
+          
+          if (value !== null && value !== undefined) {
+            queryBuilder.andWhere(`checkIn.${key} = :${paramKey}`, {
+              [paramKey]: value
+            });
+          }
+        });
+      }
+
+      // Apply sorting manually
+      if (query.orderBy && typeof query.orderBy === 'object') {
+        Object.keys(query.orderBy).forEach(key => {
+          queryBuilder.addOrderBy(`checkIn.${key}`, query.orderBy[key]);
+        });
+      } else if (query.orderByField) {
+        const order = query.order || 'ASC';
+        queryBuilder.orderBy(`checkIn.${query.orderByField}`, order);
+      } else {
+        // Default sorting
+        queryBuilder.orderBy('checkIn.CheckInDate', 'DESC');
+      }
+
+      // Apply pagination manually
+      if (query.skip !== undefined) {
+        queryBuilder.skip(query.skip);
+      }
+      
+      if (query.take !== undefined) {
+        queryBuilder.take(query.take);
+      }
+      
+      const entities = await queryBuilder.getMany();
+      return entities.map(entity => this.mapToModel(entity));
+      
+    } catch (error) {
+      console.error('Error in CheckInRepository.findAll:', error);
+      
+      // Fallback: Simple query without complex joins
+      try {
+        console.log('Falling back to simple query...');
+        const entities = await this.checkInRepository.find({
+          relations: ['room', 'booking', 'customer', 'staff'],
+          order: { CheckInId: 'DESC' },
+          take: query.take || 100,
+          skip: query.skip || 0
+        });
+        return entities.map(entity => this.mapToModel(entity));
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        // Return minimal data
+        const entities = await this.checkInRepository.find({
+          order: { CheckInId: 'DESC' },
+          take: query.take || 100,
+          skip: query.skip || 0
+        });
+        return entities.map(entity => this.mapToModel(entity));
+      }
     }
-    
-    // Apply relations
-    if (query.relations && query.relations.length > 0) {
-      query.relations.forEach(relation => {
-        queryBuilder.leftJoinAndSelect(`checkIn.${relation}`, relation);
-      });
-    }
-    
-    // Apply filters
-    if (query.filter) {
-      Object.keys(query.filter).forEach(key => {
-        queryBuilder.andWhere(`checkIn.${key} = :${key}`, { [key]: query.filter[key] });
-      });
-    }
-    
-    // Apply sorting
-    if (query.orderBy) {
-      Object.keys(query.orderBy).forEach(key => {
-        queryBuilder.addOrderBy(`checkIn.${key}`, query.orderBy[key]);
-      });
-    } else if (query.orderByField) {
-      queryBuilder.orderBy(`checkIn.${query.orderByField}`, query.order);
-    } else {
-      queryBuilder.orderBy('checkIn.CheckinDate', 'DESC');
-    }
-    
-    // Apply pagination
-    if (query.skip !== undefined) {
-      queryBuilder.skip(query.skip);
-    }
-    
-    if (query.take !== undefined) {
-      queryBuilder.take(query.take);
-    }
-    
-    const entities = await queryBuilder.getMany();
-    return entities.map(entity => this.mapToModel(entity));
   }
 
-  async findById(id: number, relations: string[] = []): Promise<CheckInModel | null> {
-    const entity = await this.checkInRepository.findOne({
-      where: { CheckinId: id }, // ใช้ CheckinId ตรงกับ Entity
-      relations: relations
-    });
-    
-    if (!entity) {
-      return null;
+  async findById(id: number, relations: string[] = ['room', 'customer', 'staff', 'booking', 'checkOuts']): Promise<CheckInModel | null> {
+    try {
+      const queryBuilder = this.checkInRepository
+        .createQueryBuilder('checkIn')
+        .leftJoinAndSelect('checkIn.room', 'room')
+        .leftJoinAndSelect('room.roomType', 'roomType')
+        .leftJoinAndSelect('room.roomStatus', 'roomStatus')
+        .leftJoinAndSelect('checkIn.customer', 'customer')
+        .leftJoinAndSelect('checkIn.staff', 'staff')
+        .leftJoinAndSelect('staff.role', 'staffRole')
+        .leftJoinAndSelect('checkIn.booking', 'booking')
+        .leftJoinAndSelect('booking.BookingStatus', 'bookingStatus')
+        .leftJoinAndSelect('checkIn.checkOuts', 'checkOuts')
+        .where('checkIn.CheckInId = :id', { id });
+
+      const entity = await queryBuilder.getOne();
+      
+      if (!entity) {
+        return null;
+      }
+      
+      return this.mapToModel(entity);
+    } catch (error) {
+      console.error('Error in CheckInRepository.findById:', error);
+      
+      // Fallback
+      const entity = await this.checkInRepository.findOne({
+        where: { CheckInId: id },
+        relations: ['room', 'booking', 'customer', 'staff']
+      });
+      
+      return entity ? this.mapToModel(entity) : null;
     }
-    
-    return this.mapToModel(entity);
   }
 
   async findByBookingId(bookingId: number): Promise<CheckInModel | null> {
-    const entity = await this.checkInRepository.findOne({
-      where: { BookingId: bookingId },
-      relations: ['booking', 'room', 'customer', 'staff']
-    });
-    
-    if (!entity) {
-      return null;
+    try {
+      const entity = await this.checkInRepository
+        .createQueryBuilder('checkIn')
+        .leftJoinAndSelect('checkIn.room', 'room')
+        .leftJoinAndSelect('room.roomType', 'roomType')
+        .leftJoinAndSelect('room.roomStatus', 'roomStatus')
+        .leftJoinAndSelect('checkIn.customer', 'customer')
+        .leftJoinAndSelect('checkIn.staff', 'staff')
+        .leftJoinAndSelect('checkIn.booking', 'booking')
+        .leftJoinAndSelect('checkIn.checkOuts', 'checkOuts')
+        .where('checkIn.BookingId = :bookingId', { bookingId })
+        .getOne();
+      
+      if (!entity) {
+        return null;
+      }
+      
+      return this.mapToModel(entity);
+    } catch (error) {
+      console.error('Error in CheckInRepository.findByBookingId:', error);
+      
+      // Fallback
+      const entity = await this.checkInRepository.findOne({
+        where: { BookingId: bookingId },
+        relations: ['booking', 'room', 'customer', 'staff', 'checkOuts']
+      });
+      
+      return entity ? this.mapToModel(entity) : null;
     }
-    
-    return this.mapToModel(entity);
   }
 
   async findByCustomerId(customerId: number): Promise<CheckInModel[]> {
-    // ใช้ GuestId เพราะในฐานข้อมูลใช้ GuestId
-    const entities = await this.checkInRepository.find({
-      where: { GuestId: customerId },
-      relations: ['booking', 'room', 'customer', 'staff', 'checkOuts']
-    });
-    
-    return entities.map(entity => this.mapToModel(entity));
+    try {
+      const entities = await this.checkInRepository
+        .createQueryBuilder('checkIn')
+        .leftJoinAndSelect('checkIn.room', 'room')
+        .leftJoinAndSelect('room.roomType', 'roomType')
+        .leftJoinAndSelect('room.roomStatus', 'roomStatus')
+        .leftJoinAndSelect('checkIn.customer', 'customer')
+        .leftJoinAndSelect('checkIn.staff', 'staff')
+        .leftJoinAndSelect('checkIn.booking', 'booking')
+        .leftJoinAndSelect('checkIn.checkOuts', 'checkOuts')
+        .where('checkIn.CustomerId = :customerId', { customerId })
+        .orderBy('checkIn.CheckInDate', 'DESC')
+        .getMany();
+      
+      return entities.map(entity => this.mapToModel(entity));
+    } catch (error) {
+      console.error('Error in CheckInRepository.findByCustomerId:', error);
+      
+      // Fallback
+      const entities = await this.checkInRepository.find({
+        where: { CustomerId: customerId },
+        relations: ['booking', 'room', 'customer', 'staff', 'checkOuts'],
+        order: { CheckInDate: 'DESC' }
+      });
+      
+      return entities.map(entity => this.mapToModel(entity));
+    }
   }
 
-  async findByGuestId(guestId: number): Promise<CheckInModel[]> {
-    const entities = await this.checkInRepository.find({
-      where: { GuestId: guestId },
-      relations: ['booking', 'room', 'customer', 'staff', 'checkOuts']
-    });
-    
-    return entities.map(entity => this.mapToModel(entity));
-  }
-
-  async create(data: CreateCheckInDto | any): Promise<CheckInModel> {
-    console.log('=== DEBUG: CheckInRepository.create ===');
-    console.log('1. Received data:', JSON.stringify(data, null, 2));
-    
-    // แปลงข้อมูลจาก DTO ให้ตรงกับ Entity
+  async create(data: CreateCheckInDto): Promise<CheckInModel> {
     const entityData = {
-      CheckinDate: data.CheckInDate, // DTO ใช้ CheckInDate -> Entity ใช้ CheckinDate
+      CheckInDate: data.CheckInDate,
       CheckoutDate: data.CheckoutDate,
       RoomId: data.RoomId,
       BookingId: data.BookingId,
-      GuestId: data.CustomerId, // DTO ใช้ CustomerId -> Entity ใช้ GuestId
+      CustomerId: data.CustomerId,
       StaffId: data.StaffId
     };
 
-    console.log('2. Converted entity data:', JSON.stringify(entityData, null, 2));
-
     const entity = this.checkInRepository.create(entityData);
-    console.log('3. Created entity (before save):', JSON.stringify(entity, null, 2));
     
     try {
       const savedEntity = await this.checkInRepository.save(entity);
-      console.log('4. Saved entity (after save):', JSON.stringify(savedEntity, null, 2));
-      
-      const model = this.mapToModel(savedEntity);
-      console.log('5. Final model:', JSON.stringify(model, null, 2));
-      
-      return model;
+      // Load the full entity with relations
+      return this.findById(savedEntity.CheckInId);
     } catch (error) {
-      console.error('6. ERROR during save:', error);
-      console.error('   Error message:', error.message);
-      console.error('   Error stack:', error.stack);
-      throw error;
+      throw new Error(`Failed to create check-in: ${error.message}`);
     }
   }
 
   async update(id: number, data: UpdateCheckInDto): Promise<CheckInModel> {
     const entity = await this.checkInRepository.findOne({
-      where: { CheckinId: id } // ใช้ CheckinId ตรงกับ Entity
+      where: { CheckInId: id }
     });
     
     if (!entity) {
       throw new NotFoundException(`Check-in with id ${id} not found`);
     }
     
-    // แปลงข้อมูลจาก DTO ให้ตรงกับ Entity โดยไม่ใช้ type annotation
-    const updateData = {};
+    // Update only provided fields
+    if (data.CheckInDate !== undefined) entity.CheckInDate = data.CheckInDate;
+    if (data.CheckoutDate !== undefined) entity.CheckoutDate = data.CheckoutDate;
+    if (data.RoomId !== undefined) entity.RoomId = data.RoomId;
+    if (data.BookingId !== undefined) entity.BookingId = data.BookingId;
+    if (data.CustomerId !== undefined) entity.CustomerId = data.CustomerId;
+    if (data.StaffId !== undefined) entity.StaffId = data.StaffId;
     
-    if (data.CheckInDate) {
-      (updateData as any).CheckinDate = data.CheckInDate; // DTO -> Entity
-    }
-    if (data.CheckoutDate) {
-      (updateData as any).CheckoutDate = data.CheckoutDate;
-    }
-    if (data.RoomId) {
-      (updateData as any).RoomId = data.RoomId;
-    }
-    if (data.BookingId) {
-      (updateData as any).BookingId = data.BookingId;
-    }
-    if (data.CustomerId) {
-      (updateData as any).GuestId = data.CustomerId; // DTO -> Entity
-    }
-    if (data.StaffId) {
-      (updateData as any).StaffId = data.StaffId;
-    }
+    await this.checkInRepository.save(entity);
     
-    Object.assign(entity, updateData);
-    
-    const updatedEntity = await this.checkInRepository.save(entity);
-    return this.mapToModel(updatedEntity);
+    // Load the updated entity with relations
+    return this.findById(id);
   }
 
   async delete(id: number): Promise<boolean> {
-    const result = await this.checkInRepository.delete({ CheckinId: id });
+    const result = await this.checkInRepository.delete({ CheckInId: id });
     return result.affected > 0;
   }
 
   private mapToModel(entity: CheckInEntity): CheckInModel {
+    // ใช้ constructor ที่รับ Partial<CheckInModel> ตามที่คุณสร้าง
     return new CheckInModel({
-      CheckInId: entity.CheckinId, // Entity: CheckinId -> Model: CheckInId
-      CheckInDate: entity.CheckinDate, // Entity: CheckinDate -> Model: CheckInDate
+      CheckInId: entity.CheckInId,
+      CheckInDate: entity.CheckInDate,
       CheckoutDate: entity.CheckoutDate,
       RoomId: entity.RoomId,
       BookingId: entity.BookingId,
-      CustomerId: entity.GuestId, // Entity: GuestId -> Model: CustomerId
+      CustomerId: entity.CustomerId,
       StaffId: entity.StaffId,
-      booking: entity.booking,
-      room: entity.room,
-      customer: entity.customer,
-      staff: entity.staff,
-      checkOuts: entity.checkOuts
+      
+      // Map related entities
+      room: entity.room ? {
+        RoomId: entity.room.RoomId,
+        TypeId: entity.room.TypeId,
+        StatusId: entity.room.StatusId,
+        RoomPrice: entity.room.RoomPrice,
+        roomType: entity.room.roomType ? {
+          TypeId: entity.room.roomType.TypeId,
+          TypeName: entity.room.roomType.TypeName
+        } : null,
+        roomStatus: entity.room.roomStatus ? {
+          StatusId: entity.room.roomStatus.StatusId,
+          StatusName: entity.room.roomStatus.StatusName
+        } : null
+      } : undefined,
+
+      booking: entity.booking ? {
+        BookingId: entity.booking.BookingId,
+        BookingDate: entity.booking.BookingDate,
+        RoomId: entity.booking.RoomId,
+        CheckinDate: entity.booking.CheckinDate,
+        CheckoutDate: entity.booking.CheckoutDate,
+        StatusId: entity.booking.StatusId,
+        CustomerId: entity.booking.CustomerId,
+        StaffId: entity.booking.StaffId,
+        CreatedAt: entity.booking.CreatedAt
+      } : undefined,
+
+      customer: entity.customer ? {
+        CustomerId: entity.customer.CustomerId,
+        CustomerName: entity.customer.CustomerName,
+        CustomerGender: entity.customer.CustomerGender,
+        CustomerTel: entity.customer.CustomerTel,
+        CustomerAddress: entity.customer.CustomerAddress,
+        CustomerPostcode: entity.customer.CustomerPostcode
+      } : undefined,
+
+      staff: entity.staff ? {
+        StaffId: entity.staff.StaffId,
+        StaffName: entity.staff.StaffName,
+        Gender: entity.staff.Gender,
+        Tel: entity.staff.Tel,
+        Address: entity.staff.Address,
+        userName: entity.staff.userName,
+        Salary: entity.staff.Salary
+      } : undefined,
+
+      // Map checkOuts if available
+      checkOuts: entity.checkOuts && entity.checkOuts.length > 0 ? entity.checkOuts : undefined
     });
   }
 }

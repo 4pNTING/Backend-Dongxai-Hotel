@@ -1,13 +1,11 @@
-// src/application/services/check-out.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CheckOutRepository } from '../../infrastructure/persistence/repositories/check-out.repository';
 import { QueryDto } from '../common/query.dto';
 import { CheckOutModel } from '../../core/domain/models/check-out.model';
 import { CreateCheckOutDto, UpdateCheckOutDto } from '../dtos/check-out.dto';
-import { CheckOutServicePort } from '../ports/check-out.port';
 
 @Injectable()
-export class CheckOutService implements CheckOutServicePort {
+export class CheckOutService {
   constructor(private checkOutRepository: CheckOutRepository) {}
 
   async query(dto: QueryDto): Promise<CheckOutModel | CheckOutModel[]> {
@@ -21,6 +19,10 @@ export class CheckOutService implements CheckOutServicePort {
     return this.checkOutRepository.findAll(dto);
   }
 
+  async findByCheckInId(checkInId: number): Promise<CheckOutModel | null> {
+    return this.checkOutRepository.findByCheckInId(checkInId);
+  }
+
   async create(dto: CreateCheckOutDto): Promise<CheckOutModel> {
     return this.checkOutRepository.create(dto);
   }
@@ -30,6 +32,7 @@ export class CheckOutService implements CheckOutServicePort {
     if (!checkOut) {
       throw new NotFoundException(`Check-out with ID ${id} not found`);
     }
+    
     await this.checkOutRepository.update(id, dto);
     return true;
   }
